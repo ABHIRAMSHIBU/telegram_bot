@@ -30,6 +30,14 @@ try:
 except:
 	print("ARC data unavailable, falling back st=NULL");
 	st="NULL"
+def add(bot, update):
+   print(update.message.from_user.username+":"+update.message.text)
+   message=update.message.text
+   list=message.strip("/add").strip().split(",")
+   sum=0.0
+   for i in list :
+        sum+=float(i)
+   update.message.reply_text("Sum is :"+str(sum))
 def about(bot, update):
    f=open("about.txt",'r');
    bot.send_message(chat_id=update.message.chat_id, text=f.read())
@@ -62,6 +70,7 @@ updater = Updater(key)
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('about', about))
+updater.dispatcher.add_handler(CommandHandler('add', add))
 updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
 updater.start_polling()
