@@ -30,6 +30,9 @@ try:
 except:
 	print("ARC data unavailable, falling back st=NULL");
 	st="NULL"
+def runs(bot, update):
+   update.message.reply_text("not so fast...")
+
 def mult(bot, update):
    print(update.message.from_user.username+":"+update.message.text)
    message=update.message.text
@@ -79,6 +82,7 @@ except:
    exit()
 updater = Updater(key)
 updater.dispatcher.add_handler(CommandHandler('start', start))
+updater.dispatcher.add_handler(CommandHandler('runs', runs))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('about', about))
 updater.dispatcher.add_handler(CommandHandler('add', add))
@@ -87,5 +91,5 @@ updater.dispatcher.add_handler(CommandHandler('div', div))
 updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
 updater.start_polling()
-updater.idle()
+#updater.idle()
 
