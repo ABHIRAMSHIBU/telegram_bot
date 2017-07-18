@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 from telegram.ext import Updater, CommandHandler
 import pickle
+import re
+def strip_html(string):
+    return re.sub('<[^<]+?>', '', string).replace("&","")
 
 class item:    #creating the class
    def __init__(self):
@@ -88,14 +91,14 @@ def feeds(bot, update):
         link=['Fetch ERROR!']
         desc=['Fetch ERROR!']
     for i in range(len(title)):
-        text="<b>"+title[i]+"</b>"+"\n"+"link :"+link[i]+"\n"+desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I")[:50]+"..."
+        text="<b>"+title[i]+"</b>"+"\n"+"link :"+link[i]+"\n"+strip_html(desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I")[:50])+"..."
         print(text)
         bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
     print(update.message.from_user.username+":"+update.message.text)
 def disp(bot,update):
 	bot.send_message(chat_id=update.message.chat_id, text='<b>bold</b> <i>italic</i> <a href="http://google.com">link</a>.', parse_mode='XML')
 try: 
-   key=open("conf.ini",'r').read().strip()
+   key="442288701:AAET5sl4uzRXpLKNJ5d4_xDe-Y3uJgVWE_A"
 except: 
    print("Error occured, try running setup.py")
    exit()
@@ -111,4 +114,5 @@ updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
 updater.start_polling()
 #updater.idle()
+
 
