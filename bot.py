@@ -30,6 +30,15 @@ try:
 except:
 	print("ARC data unavailable, falling back st=NULL");
 	st="NULL"
+f_title=open("title.bin", "rb")
+f_link=open("link.bin", "rb")
+f_desc=open("desc.bin", "rb")
+title=[]
+link=[]
+desc=[]
+title=pickle.load(f_title)
+link=pickle.load(f_link)
+desc=pickle.load(f_desc)
 def runs(bot, update):
    update.message.reply_text("not so fast...")
 
@@ -63,16 +72,26 @@ def start(bot, update):
 def hello(bot, update):
     update.message.reply_text('Hello '+update.message.from_user.first_name)
 def feeds(bot, update):
-    f=open("arcdata", "rb")
-    li_inst= pickle.load(f)
-    l=li_inst
-    s=""
-    for i in range(len(l)):
-        s+=l[i].title+"\n\n"
-    bot.send_message(chat_id=update.message.chat_id, text=st)
-    print(s)
+    f_title=open("title.bin", "rb")
+    f_link=open("link.bin", "rb")
+    f_desc=open("desc.bin", "rb")
+    try:
+        title=[]
+        link=[]
+        desc=[]
+        title=pickle.load(f_title)
+        link=pickle.load(f_link)
+        desc=pickle.load(f_desc)
+    except:
+        print("Error")
+        title=['Fetch ERROR!']
+        link=['Fetch ERROR!']
+        desc=['Fetch ERROR!']
+    for i in range(len(title)):
+        text="<b>"+title[i]+"</b>"+"\n"+"link :"+link[i]+"\n"+desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I")[:50]+"..."
+        print(text)
+        bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
     print(update.message.from_user.username+":"+update.message.text)
-
 def disp(bot,update):
 	bot.send_message(chat_id=update.message.chat_id, text='<b>bold</b> <i>italic</i> <a href="http://google.com">link</a>.', parse_mode='XML')
 try: 
