@@ -30,6 +30,17 @@ try:
 except:
 	print("ARC data unavailable, falling back st=NULL");
 	st="NULL"
+def mult(bot, update):
+   print(update.message.from_user.username+":"+update.message.text)
+   message=update.message.text
+   list=message.strip("/mult").strip().split(",")
+   multi=1.0
+   for i in list :
+        multi*=float(i)
+   update.message.reply_text("Answer is :"+str(multi))
+def div(bot, update):
+   print(update.message.from_user.username+":"+update.message.text)
+   update.message.reply_text("Answer is, im not capable yet!")
 def add(bot, update):
    print(update.message.from_user.username+":"+update.message.text)
    message=update.message.text
@@ -71,6 +82,8 @@ updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('about', about))
 updater.dispatcher.add_handler(CommandHandler('add', add))
+updater.dispatcher.add_handler(CommandHandler('mult', mult))
+updater.dispatcher.add_handler(CommandHandler('div', div))
 updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
 updater.start_polling()
