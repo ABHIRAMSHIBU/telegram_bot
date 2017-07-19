@@ -1,7 +1,17 @@
 #!/usr/bin/python3
 import pickle
-f=open("index.rss","r")
-data=f.read()
+import os
+try:
+	if os.path.exists("index.rss"):
+		print("index.rss found, deleting")
+		os.system("rm index.rss")
+	os.system("wget https://forums.arctotal.com/forums/-/index.rss")
+	f=open("index.rss","r")
+	data=f.read()
+except:
+	print("Some error occured!")
+	print("Exiting!")
+	exit()
 lis=[]
 z=-1
 while(1):
