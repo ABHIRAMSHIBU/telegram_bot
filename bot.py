@@ -98,7 +98,7 @@ def feeds(bot, update):
 def disp(bot,update):
 	bot.send_message(chat_id=update.message.chat_id, text='<b>bold</b> <i>italic</i> <a href="http://google.com">link</a>.', parse_mode='XML')
 try: 
-   key="442288701:AAET5sl4uzRXpLKNJ5d4_xDe-Y3uJgVWE_A"
+   key=open("conf.ini",'r').read().strip()
 except: 
    print("Error occured, try running setup.py")
    exit()
