@@ -64,4 +64,5 @@ pickle.dump(desc,file_desc)
 file_title.close()
 file_link.close()
 file_desc.close()
+os.system("rm index.rss")
 

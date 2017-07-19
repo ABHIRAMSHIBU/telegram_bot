@@ -2,6 +2,7 @@
 from telegram.ext import Updater, CommandHandler
 import pickle
 import re
+import os
 def strip_html(string):
     return re.sub('<[^<]+?>', '', string).replace("&","")
 
@@ -33,15 +34,6 @@ try:
 except:
 	print("ARC data unavailable, falling back st=NULL");
 	st="NULL"
-f_title=open("title.bin", "rb")
-f_link=open("link.bin", "rb")
-f_desc=open("desc.bin", "rb")
-title=[]
-link=[]
-desc=[]
-title=pickle.load(f_title)
-link=pickle.load(f_link)
-desc=pickle.load(f_desc)
 def id(bot, update):
    text="Supergroup id: "+str(update.message.chat_id)
    update.message.reply_text(text)
@@ -79,9 +71,14 @@ def start(bot, update):
 def hello(bot, update):
     update.message.reply_text('Hello '+update.message.from_user.first_name)
 def feeds(bot, update):
-    f_title=open("title.bin", "rb")
-    f_link=open("link.bin", "rb")
-    f_desc=open("desc.bin", "rb")
+    
+    try:
+       os.system("python arc_get.py")
+       f_title=open("title.bin", "rb")
+       f_link=open("link.bin", "rb")
+       f_desc=open("desc.bin", "rb")
+    except:
+       print("Fetcher deploy failure!")
     try:
         title=[]
         link=[]
@@ -96,9 +93,13 @@ def feeds(bot, update):
         desc=['Fetch ERROR!']
     for i in range(len(title)):
         text="<b>"+title[i]+"</b>"+"<a href="+'"'+link[i]+'"'+"> Link</a>\n"+strip_html(desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I")[:50])+"..."
-        print(text)
-        bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
+        try:
+        	bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
+        except:
+                print("Error occured while sending below")
+                print(text+"\n\n\n")
     print(update.message.from_user.username+":"+update.message.text)
+    os.system("rm -rf title.bin link.bin desc.bin")
 def disp(bot,update):
 	bot.send_message(chat_id=update.message.chat_id, text='<b>bold</b> <i>italic</i> <a href="http://google.com">link</a>.', parse_mode='XML')
 try: 
