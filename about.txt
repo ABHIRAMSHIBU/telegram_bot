@@ -1,5 +1,11 @@
-             ARCTotal offical bot!
-                About the ARC
+             <b>ARCTotal offical bot!</b>
+                <i>About/Help ARC-bot</i>
 -------------------------------------------------------
-Under contruction!
+<b>Commands</b>
+1)<code> /start</code>
+2)<code> /about</code>
+3)<code> /add x1,x2,x3....</code>
+4)<code> /mult x1,x2,x3....</code>
+5)<code> /feeds</code>
+Our website : <a href='https://forums.arctotal.com/'>ARC Forums</a>
 -------------------------------------------------------

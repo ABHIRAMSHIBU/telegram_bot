@@ -65,7 +65,7 @@ def add(bot, update):
    update.message.reply_text("Sum is :"+str(sum))
 def about(bot, update):
    f=open("about.txt",'r');
-   bot.send_message(chat_id=update.message.chat_id, text=f.read())
+   bot.send_message(chat_id=update.message.chat_id, text=f.read(),parse_mode="HTML")
    f.close()
    print(update.message.from_user.username+":"+update.message.text)
 def start(bot, update):
