@@ -1,8 +1,11 @@
 #!/usr/bin/python3
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler,Job
 import pickle
 import re
 import os
+import telegram
+
+
 def strip_html(string):
     return re.sub('<[^<]+?>', '', string).replace("&","")
 def cleanhtml(raw_html):
@@ -27,6 +30,26 @@ class item:    #creating the class
     self.h_creator=""
     self.h_content=""
     self.h_comment=""
+
+
+import time
+import os
+import pickle
+
+
+def changeindex(fname1,fname2):
+    change_index=[]
+    
+    l1=pickle.load(fname1)
+    l2=pickle.load(fname2)
+    
+    
+    for i in range(len(l2)):
+        if l2[i] not in l1:
+            change_index.append(i)
+    return change_index 
+
+
 try:
  f=open("arcdata", "rb")
  l= pickle.load(f)
@@ -76,7 +99,7 @@ def hello(bot, update):
 def feeds(bot, update):
     
     try:
-       os.system("python arc_get.py")
+       os.system("python3 arc_get.py title.bin link.bin desc.bin")
        f_title=open("title.bin", "rb")
        f_link=open("link.bin", "rb")
        f_desc=open("desc.bin", "rb")
@@ -98,6 +121,7 @@ def feeds(bot, update):
         text="<b>"+title[i]+"</b>"+"<a href="+'"'+link[i]+'"'+"> Link</a>\n"+cleanhtml(desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))+"..."
         try:
         	bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
+        	print("\n\n\nSTART"+text+"END\n\n\n")
         except:
                 print("Error occured while sending below")
                 print(text+"\n\n\n")
@@ -105,12 +129,74 @@ def feeds(bot, update):
     os.system("rm -rf title.bin link.bin desc.bin")
 def disp(bot,update):
 	bot.send_message(chat_id=update.message.chat_id, text='<b>bold</b> <i>italic</i> <a href="http://google.com">link</a>.', parse_mode='XML')
+
+
+
 try: 
    key=open("conf.ini",'r').read().strip()
 except: 
    print("Error occured, try running setup.py")
    exit()
+   
+
 updater = Updater(key)
+#bot = telegram.Bot(token=key)
+#chat_id = bot.get_updates()[-1].message.chat_id
+
+#def send_changedmessage(bot,update):
+ #   global changed_text
+  #  bot.send_message(chat_id=update.message.chat_id, text=changed_text, parse_mode="HTML")
+    
+    
+
+counter=-1
+def new(bot,job):
+    global counter
+    if counter==-1:
+        print("FIRST ITERATION")
+        ftitle1=open("title1.bin","rb")
+        os.system("python3 arc_get.py title2.bin link2.bin desc2.bin")
+        ftitle2=open("title2.bin","rb")
+        lchange=changeindex(ftitle1,ftitle2)
+        title2=pickle.load(open("title2.bin","rb"))
+        link2=pickle.load(open("link2.bin","rb"))
+        desc2=pickle.load(open("desc2.bin","rb"))
+    
+        for i in range(len(title2)):
+            if i in lchange:
+                text="<b>"+title2[i]+"</b>"+"<a href="+'"'+link2[i]+'"'+"> Link</a>\n"+cleanhtml(desc2[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))+"..."
+                
+                print(text)
+                bot.send_message(chat_id=open("chat_id.txt").read(), text=text, parse_mode="HTML")
+        	#print("\n\n\nSTART"+text+"END\n\n\n")
+                
+                
+                
+
+        
+    else:
+        print("second iteration")
+        ftitle2=open("title2.bin","rb")
+        os.system("python3 arc_get.py title1.bin link1.bin desc1.bin")
+        ftitle1=open("title1.bin","rb")
+        lchange=changeindex(ftitle2,ftitle1)
+        title1=pickle.load(open("title1.bin","rb"))
+        link1=pickle.load(open("link1.bin","rb"))
+        desc1=pickle.load(open("desc1.bin","rb"))
+        for i in range(len(title1)):
+            if i in lchange:
+                text="<b>"+title1[i]+"</b>"+"<a href="+'"'+link1[i]+'"'+"> Link</a>\n"+cleanhtml(desc1[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))+"..."
+                bot.send_message(chat_id=open("chat_id.txt").read(), text=text, parse_mode="HTML")
+                print(text)
+                #print("\n\n\nSTART"+text+"END\n\n\n")
+        
+    
+    counter*=-1
+    
+job_minute = Job(new, 3600.0)
+j=updater.job_queue
+j.put(job_minute, next_t=0.0)
+
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('id', id))
 updater.dispatcher.add_handler(CommandHandler('runs', runs))
