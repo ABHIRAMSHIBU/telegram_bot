@@ -101,7 +101,7 @@ def ktu(bot,update):
                     l_desc=pickle.load(f2)
                     bot.send_message(chat_id=update.message.chat_id, text=text)
                     for i in range(len(l_title)):
-                         bot.send_message(chat_id=update.message.chat_id, text=str(i+1)+"."+" "+l_title[i]+"\n\n"+l_desc[i])
+                         bot.send_message(chat_id=update.message.chat_id, text=str(i+1)+"."+" "+"<b>"+l_title[i]+"</b>"+"\n\n"+l_desc[i],parse_mode="HTML")
                except:
                      text="Read error"
                      print(bcolors.FAIL+"Failed to unpickle"+bcolors.ENDC)
