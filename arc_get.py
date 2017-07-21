@@ -55,9 +55,14 @@ for i in range(len(lis)):
     for j in range(loc,loce):
         desc[i]=desc[i]+lis[i][j]
     desc[i]=desc[i].strip("<content:encoded>").strip("![CDATA[").strip("]]")
-file_title=open("title.bin","wb")
-file_link=open("link.bin","wb")
-file_desc=open("desc.bin","wb")
+
+import sys
+ftitle=sys.argv[1]
+flink=sys.argv[2]
+fdesc=sys.argv[3]
+file_title=open(ftitle,"wb")
+file_link=open(flink,"wb")
+file_desc=open(fdesc,"wb")
 pickle.dump(title,file_title)
 pickle.dump(link,file_link)
 pickle.dump(desc,file_desc)
