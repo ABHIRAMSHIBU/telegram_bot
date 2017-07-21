@@ -70,7 +70,8 @@ def hello(bot, update):
 
 def about(bot,update):
         bot.send_message(chat_id=update.message.chat_id, text="<b>This is the announcement bot of R2 TKMCE</b>",parse_mode="HTML")
-        bot.send_message(chat_id=update.message.chat_id, text="press<code> /announcements</code> to see details",parse_mode="HTML")
+        bot.send_message(chat_id=update.message.chat_id, text="Choose /announcements to see class details\nChoose /ktu to see university announcements")
+                
 def announcements(bot,update):
         bot.send_message(chat_id=update.message.chat_id, text="Announcements is as follows\n")
         f=open("announcement_data.bin","rb")
@@ -83,7 +84,7 @@ def announcements(bot,update):
         except:
                 pass
 def ktu(bot,update):
-        os.system("rm /tmp/ktudata_title.bin /tmp/ktudata_desc.bin")
+        os.system("rm /tmp/ktudata_title.bin /tmp/ktudata_desc.bin /tmp/ktudata_time.bin")
         bot.send_message(chat_id=update.message.chat_id, text="Acquiring Data from ktu.edu.in\nStand by .........")      
         if(os.path.exists("get_ktudata.py")):
               os.system("python get_ktudata.py")
@@ -95,13 +96,16 @@ def ktu(bot,update):
               flag=0
         if(flag):
                try:
+                    link=''
                     f1=open("/tmp/ktudata_title.bin","rb")
                     f2=open("/tmp/ktudata_desc.bin","rb")
+                    f3=open("/tmp/ktudata_time.bin","rb")
                     l_title=pickle.load(f1)
                     l_desc=pickle.load(f2)
+                    l_time=pickle.load(f3)
                     bot.send_message(chat_id=update.message.chat_id, text=text)
                     for i in range(len(l_title)):
-                         bot.send_message(chat_id=update.message.chat_id, text=str(i+1)+"."+" "+"<b>"+l_title[i]+"</b>"+"\n\n"+l_desc[i],parse_mode="HTML")
+                        bot.send_message(chat_id=update.message.chat_id, text=str(i+1)+"."+" "+"<b>"+l_title[i]+"</b>"+"\n"+"<b>"+str(l_time[i])+"</b>"+"\n\n"+l_desc[i]+"\n\n",parse_mode="HTML")
                except:
                      text="Read error"
                      print(bcolors.FAIL+"Failed to unpickle"+bcolors.ENDC)
