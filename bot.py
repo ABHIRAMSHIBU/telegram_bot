@@ -83,7 +83,7 @@ def announcements(bot,update):
         except:
                 pass
 def ktu(bot,update):
-        os.system("rm ktudata_title.bin ktudata_desc.bin")
+        os.system("rm /tmp/ktudata_title.bin /tmp/ktudata_desc.bin")
         bot.send_message(chat_id=update.message.chat_id, text="Acquiring Data from ktu.edu.in\nStand by .........")      
         if(os.path.exists("get_ktudata.py")):
               os.system("python get_ktudata.py")
