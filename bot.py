@@ -1,7 +1,16 @@
 #!/usr/bin/python3
-#the code is good
+import os 
+import subprocess
 from telegram.ext import Updater, CommandHandler
-
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 class announcement():
     def __init__(self,title='',desc='',img=''):
         self.title=title
@@ -74,26 +83,41 @@ def announcements(bot,update):
         except:
                 pass
 def ktu(bot,update):
-        bot.send_message(chat_id=update.message.chat_id, text="Acquiring Data from ktu.edu.in\nStand by .........") 
-        import os
-        os.system("python get_ktudata.py")
-        bot.send_message(chat_id=update.message.chat_id, text="KTU Announcements is as follows\n")
-        f1=open("ktudata_title.bin","rb")
-        l_title=pickle.load(f1)
-        f2=open("ktudata_desc.bin","rb")
-        l_desc=pickle.load(f2)
-        for i in range(len(l_title)):
-                bot.send_message(chat_id=update.message.chat_id, text=str(i+1)+"."+" "+l_title[i]+"\n\n"+l_desc[i])
+        os.system("rm ktudata_title.bin ktudata_desc.bin")
+        bot.send_message(chat_id=update.message.chat_id, text="Acquiring Data from ktu.edu.in\nStand by .........")      
+        if(os.path.exists("get_ktudata.py")):
+              os.system("python get_ktudata.py")
+              text="KTU Announcements is as follows\n"
+              flag=1
+        else:
+              text="Error! Contact bot admin"
+              print(bcolors.FAIL+"Fetch program deploy error"+bcolors.ENDC)
+              flag=0
+        if(flag):
+               try:
+                    f1=open("/tmp/ktudata_title.bin","rb")
+                    f2=open("/tmp/ktudata_desc.bin","rb")
+                    l_title=pickle.load(f1)
+                    l_desc=pickle.load(f2)
+                    bot.send_message(chat_id=update.message.chat_id, text=text)
+                    for i in range(len(l_title)):
+                         bot.send_message(chat_id=update.message.chat_id, text=str(i+1)+"."+" "+l_title[i]+"\n\n"+l_desc[i])
+               except:
+                     text="Read error"
+                     print(bcolors.FAIL+"Failed to unpickle"+bcolors.ENDC)
+                     bot.send_message(chat_id=update.message.chat_id, text=text)
+        else:
+               bot.send_message(chat_id=update.message.chat_id, text=text)
 def mirror(bot,update):
 	a=update.message.text
 	l=findspace(a)
 	passkey=open("passkey.txt").read()
 	if a[l[0]+1:l[1]]==passkey:
-		bot.send_message(chat_id=update.message.chat_id, text="your wish is my command master\n")
+		bot.send_message(chat_id=update.message.chat_id, text="Your wish is my command master\n")
 		exec(a[l[1]+1:])
 		print("done")
 	else:
-		bot.send_message(chat_id=update.message.chat_id, text="failed to authenticate\n")
+		bot.send_message(chat_id=update.message.chat_id, text="Authentication failure\n")
 def add(bot,update):
 	#import telegram_update as u
 	#a=update.message.text
@@ -104,8 +128,7 @@ def add(bot,update):
 	#print(a[l[0]+1:l[1]])
 	bot.send_photo(chat_id=update.message.chat_id, photo=open('/home/abhijith/Desktop/tkm.jpg', 'rb'))
 #    update.message.reply_text()
-key=open("conf.ini",'r').read().strip()
-updater = Updater(key)
+updater = Updater(open("conf.ini",'r').read().strip())
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('mirror', mirror))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
