@@ -37,6 +37,23 @@ import os
 import pickle
 
 
+def backup(bot, update):
+    update.message.reply_text("Checking userinfo.")
+    if(str(update.message.from_user.id) in open("admins.db","r").read()):
+        bot.send_message(chat_id=update.message.chat_id, text="Access:<b> granted</b>",parse_mode="HTML")
+        bot.send_message(chat_id=update.message.chat_id, text="Backing up data and db.",parse_mode="HTML")
+        os.system("python ~/backup.py")
+        try:
+           if('success' in open("/root/status","r").read()):
+               bot.send_message(chat_id=update.message.chat_id, text="Backup Status:<b> SUCCESS</b>",parse_mode="HTML")
+           else:
+               bot.send_message(chat_id=update.message.chat_id, text="Backing Status:<b> FAILED!</b>.",parse_mode="HTML")
+        except:
+             print("Error! - No such file or dir /root/status")
+             bot.send_message(chat_id=update.message.chat_id, text="Backing Status:<b> Unknown, probably failed</b>.",parse_mode="HTML")
+    else:
+           bot.send_message(chat_id=update.message.chat_id, text="Access:<b> denied</b>",parse_mode="HTML")
+    os.system("rm /root/status")
 def changeindex(fname1,fname2):
     change_index=[]
     
@@ -118,7 +135,7 @@ def feeds(bot, update):
         link=['Fetch ERROR!']
         desc=['Fetch ERROR!']
     for i in range(len(title)):
-        text="<b>"+title[i]+"</b>"+"<a href="+'"'+link[i]+'"'+"> Link</a>\n"+cleanhtml(desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))+"..."
+        text="<b>"+title[i]+"</b>"+"<a href="+'"'+link[i]+'"'+"> Link</a>\n"+cleanhtml(desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))[:50]+"..."
         try:
         	bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
         	print("\n\n\nSTART"+text+"END\n\n\n")
@@ -207,6 +224,7 @@ updater.dispatcher.add_handler(CommandHandler('mult', mult))
 updater.dispatcher.add_handler(CommandHandler('div', div))
 updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
+updater.dispatcher.add_handler(CommandHandler('backup', backup))
 updater.start_polling()
 #updater.idle()
 
