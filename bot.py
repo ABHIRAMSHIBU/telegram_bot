@@ -69,7 +69,7 @@ def hello(bot, update):
         update.message.reply_text('Hello '+update.message.from_user.username)
 
 def about(bot,update):
-        bot.send_message(chat_id=update.message.chat_id, text="<b>This is the announcement bot of R2 TKMCE</b>",parse_mode="HTML")
+        bot.send_message(chat_id=update.message.chat_id, text="<b>This is the announcement bot of R3 TKMCE</b>",parse_mode="HTML")
         bot.send_message(chat_id=update.message.chat_id, text="Choose /announcements to see class details\nChoose /ktu to see university announcements")
                 
 def announcements(bot,update):
@@ -84,7 +84,7 @@ def announcements(bot,update):
         except:
                 pass
 def ktu(bot,update):
-        os.system("rm /tmp/ktudata_title.bin /tmp/ktudata_desc.bin /tmp/ktudata_time.bin")
+        os.system("rm ktudata_title.bin /tmp/ktudata_desc.bin ktudata_time.bin")
         bot.send_message(chat_id=update.message.chat_id, text="Acquiring Data from ktu.edu.in\nStand by .........")      
         if(os.path.exists("get_ktudata.py")):
               os.system("python get_ktudata.py")
@@ -97,9 +97,9 @@ def ktu(bot,update):
         if(flag):
                try:
                     link=''
-                    f1=open("/tmp/ktudata_title.bin","rb")
-                    f2=open("/tmp/ktudata_desc.bin","rb")
-                    f3=open("/tmp/ktudata_time.bin","rb")
+                    f1=open("ktudata_title.bin","rb")
+                    f2=open("ktudata_desc.bin","rb")
+                    f3=open("ktudata_time.bin","rb")
                     l_title=pickle.load(f1)
                     l_desc=pickle.load(f2)
                     l_time=pickle.load(f3)

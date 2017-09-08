@@ -1,8 +1,8 @@
 import os
-os.system("curl https://ktu.edu.in/eu/core/announcements.htm -o /tmp/announcements.htm")
-f=open("/tmp/announcements.htm")
-fr=open("/tmp/announcements.htm")
-os.remove("/tmp/announcements.htm")
+os.system("curl https://ktu.edu.in/eu/core/announcements.htm -o announcements.htm")
+f=open("announcements.htm")
+fr=open("announcements.htm")
+os.remove("announcements.htm")
 
 z=fr.read()
 l=z.split("\n")
@@ -78,13 +78,13 @@ for i in range(len(l_data)):
 for i in range(len(l_data)):
     l_desc.append(desc(l_data[i]))
 import pickle
-f1=open("/tmp/ktudata_title.bin","wb")
+f1=open("ktudata_title.bin","wb")
 pickle.dump(l_title,f1)
-f2=open("/tmp/ktudata_desc.bin","wb")
+f2=open("ktudata_desc.bin","wb")
 pickle.dump(l_desc,f2)
-f3=open("/tmp/ktudata_link.bin","wb")
+f3=open("ktudata_link.bin","wb")
 pickle.dump(link[:10],f3)
-f4=open("/tmp/ktudata_time.bin","wb")
+f4=open("ktudata_time.bin","wb")
 pickle.dump(time[:10],f4)
 
 f1.close()
