@@ -1,5 +1,14 @@
-             <b>ARCTotal offical bot!</b>
-                <i>About/Help ARC-bot</i>
+                    <b>Chat bot!</b>
+                <i>About/Help Chat-bot</i>
+._____..... ___ 
+/__ __\.../.._...\
+.../ \.......| |....\|
+...|..|.......| |.__/|
+...\_/......\____/
+By Team Destroyer
+@AbhiramShibu
+@cMdev007
+@ROOT_OMEGA                        
 -------------------------------------------------------
 <b>Commands</b>
 1)<code> /start</code>
@@ -7,5 +16,8 @@
 3)<code> /add x1,x2,x3....</code>
 4)<code> /mult x1,x2,x3....</code>
 5)<code> /feeds</code>
-Our website : <a href='https://forums.arctotal.com/'>ARC Forums</a>
+6)Send messages normally to chat
 -------------------------------------------------------
+About AI
+-------------------------------------------------------
+AI developed by <a href="https://github.com/wrxck/">wrxck</a> 

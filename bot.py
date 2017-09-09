@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from telegram.ext import Updater, CommandHandler,Job
+from telegram.ext import Updater, CommandHandler,Job, MessageHandler, Filters
 import pickle
 import re
 import os
@@ -167,6 +167,29 @@ updater = Updater(key)
     
 
 counter=-1
+
+def message(bot,update):
+    message=update.message.text
+    print(update.message.from_user.username+":"+update.message.text)
+    try:
+        if(os.path.exists("out.tmp")):
+            os.remove("out.tmp")
+        fout=open("a.tmp","w")
+        fout.write(message)
+        fout.close()
+        while(not os.path.exists("out.tmp")):
+            continue
+        time.sleep(3)
+        fin=open("out.tmp","r")
+        reply=fin.read()
+        print(reply)
+        update.message.reply_text(reply)
+        fin.close()
+        os.remove("out.tmp")
+    except:
+        print("Error occured!")
+
+
 def new(bot,job):
     global counter
     if counter==-1:
@@ -225,6 +248,7 @@ updater.dispatcher.add_handler(CommandHandler('div', div))
 updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
 updater.dispatcher.add_handler(CommandHandler('backup', backup))
+updater.dispatcher.add_handler(MessageHandler(Filters.text,message))
 updater.start_polling()
 #updater.idle()
 
