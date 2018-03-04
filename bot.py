@@ -232,9 +232,9 @@ def new(bot,job):
     
     counter*=-1
     
-job_minute = Job(new, 3600.0)
-j=updater.job_queue
-j.put(job_minute, next_t=0.0)
+#job_minute = Job(new, 3600.0)
+#j=updater.job_queue
+#j.put(job_minute, next_t=0.0)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('id', id))
