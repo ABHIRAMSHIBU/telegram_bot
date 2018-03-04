@@ -4,6 +4,7 @@ import pickle
 import re
 import os
 import telegram
+import feedparser
 
 
 def strip_html(string):
@@ -113,6 +114,27 @@ def start(bot, update):
     print(update.message.from_user.username+":"+update.message.text)
 def hello(bot, update):
     update.message.reply_text('Hello '+update.message.from_user.first_name)
+def feed(bot, update):
+    try:
+        data=feedparser.parse("https://forums.arctotal.com/forums/-/index.rss")
+        for i in data["entries"]:
+            resultString=""
+            try:
+                resultString+="Thread from :"+i["author"]+"\n"
+                resultString+="Title :"+i["title"]+"\n"
+                resultString+="Link :"+i["link"]+"\n"
+            except:
+                print("Autor ERROR!");
+            try:
+                resultString+="Content :"+cleanhtml(i["content"][0]["value"])[:30]+"........"+"\n"
+            except:
+                print("Content error");
+            try:
+                bot.send_message(chat_id=update.message.chat_id, text=resultString, parse_mode="HTML")
+            except:
+                print("Bot error!")
+    except:
+        update.message.reply_text("Internal ERROR occured!")
 def feeds(bot, update):
     
     try:
@@ -223,6 +245,7 @@ updater.dispatcher.add_handler(CommandHandler('add', add))
 updater.dispatcher.add_handler(CommandHandler('mult', mult))
 updater.dispatcher.add_handler(CommandHandler('div', div))
 updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
+updater.dispatcher.add_handler(CommandHandler('feed', feed))
 updater.dispatcher.add_handler(CommandHandler('disp', disp))
 updater.dispatcher.add_handler(CommandHandler('backup', backup))
 updater.start_polling()
