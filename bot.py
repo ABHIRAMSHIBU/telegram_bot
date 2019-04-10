@@ -4,8 +4,8 @@ import pickle
 import re
 import os
 import telegram
-import feedparser
-
+import psutil
+import subprocess as sp
 
 def strip_html(string):
     return re.sub('<[^<]+?>', '', string).replace("&","")
@@ -34,56 +34,13 @@ class item:    #creating the class
 
 
 import time
-import os
-import pickle
 
-
-def backup(bot, update):
-    update.message.reply_text("Checking userinfo.")
-    if(str(update.message.from_user.id) in open("admins.db","r").read()):
-        bot.send_message(chat_id=update.message.chat_id, text="Access:<b> granted</b>",parse_mode="HTML")
-        bot.send_message(chat_id=update.message.chat_id, text="Backing up data and db.",parse_mode="HTML")
-        os.system("python ~/backup.py")
-        try:
-           if('success' in open("/root/status","r").read()):
-               bot.send_message(chat_id=update.message.chat_id, text="Backup Status:<b> SUCCESS</b>",parse_mode="HTML")
-           else:
-               bot.send_message(chat_id=update.message.chat_id, text="Backing Status:<b> FAILED!</b>.",parse_mode="HTML")
-        except:
-             print("Error! - No such file or dir /root/status")
-             bot.send_message(chat_id=update.message.chat_id, text="Backing Status:<b> Unknown, probably failed</b>.",parse_mode="HTML")
-    else:
-           bot.send_message(chat_id=update.message.chat_id, text="Access:<b> denied</b>",parse_mode="HTML")
-    os.system("rm /root/status")
-def changeindex(fname1,fname2):
-    change_index=[]
-    
-    l1=pickle.load(fname1)
-    l2=pickle.load(fname2)
-    
-    
-    for i in range(len(l2)):
-        if l2[i] not in l1:
-            change_index.append(i)
-    return change_index 
-
-
-try:
- f=open("arcdata", "rb")
- l= pickle.load(f)
- st=""
- for i in range(len(l)):
-    st+=l[i].title+"\n\n"+l[i].content
- print(st)
-except:
-	print("ARC data unavailable, falling back st=NULL");
-	st="NULL"
 def id(bot, update):
    text="Supergroup id: "+str(update.message.chat_id)
    update.message.reply_text(text)
    update.message.reply_text("User id: "+str(update.message.from_user.id))
 def runs(bot, update):
-   update.message.reply_text("not so fast...")
+   update.message.reply_text("Yup at 100%")
 
 def mult(bot, update):
    print(update.message.from_user.username+":"+update.message.text)
@@ -114,63 +71,84 @@ def start(bot, update):
     print(update.message.from_user.username+":"+update.message.text)
 def hello(bot, update):
     update.message.reply_text('Hello '+update.message.from_user.first_name)
-def feed(bot, update):
-    try:
-        data=feedparser.parse("https://forums.arctotal.com/forums/-/index.rss")
-        for i in data["entries"]:
-            resultString=""
-            try:
-                resultString+="Thread from :"+i["author"]+"\n"
-                resultString+="Title :"+i["title"]+"\n"
-                resultString+="Link :"+i["link"]+"\n"
-            except:
-                print("Autor ERROR!");
-            try:
-                resultString+="Content :"+cleanhtml(i["content"][0]["value"])[:30]+"........"+"\n"
-            except:
-                print("Content error");
-            try:
-                bot.send_message(chat_id=update.message.chat_id, text=resultString, parse_mode="HTML")
-            except:
-                print("Bot error!")
-    except:
-        update.message.reply_text("Internal ERROR occured!")
-def feeds(bot, update):
-    
-    try:
-       os.system("python3 arc_get.py title.bin link.bin desc.bin")
-       f_title=open("title.bin", "rb")
-       f_link=open("link.bin", "rb")
-       f_desc=open("desc.bin", "rb")
-    except:
-       print("Fetcher deploy failure!")
-    try:
-        title=[]
-        link=[]
-        desc=[]
-        title=pickle.load(f_title)
-        link=pickle.load(f_link)
-        desc=pickle.load(f_desc)
-    except:
-        print("Error")
-        title=['Fetch ERROR!']
-        link=['Fetch ERROR!']
-        desc=['Fetch ERROR!']
-    for i in range(len(title)):
-        text="<b>"+title[i]+"</b>"+"<a href="+'"'+link[i]+'"'+"> Link</a>\n"+cleanhtml(desc[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))[:50]+"..."
-        try:
-        	bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode="HTML")
-        	print("\n\n\nSTART"+text+"END\n\n\n")
-        except:
-                print("Error occured while sending below")
-                print(text+"\n\n\n")
-    print(update.message.from_user.username+":"+update.message.text)
-    os.system("rm -rf title.bin link.bin desc.bin")
-def disp(bot,update):
-	bot.send_message(chat_id=update.message.chat_id, text='<b>bold</b> <i>italic</i> <a href="http://google.com">link</a>.', parse_mode='XML')
-
-
-
+def sysstat(bot, update):
+    speedtestp=os.popen("speedtest")
+    cpuUse=psutil.cpu_percent(percpu=True,interval=1)
+    usedMem=psutil.virtual_memory().used/1024/1024/1024
+    freeMem=psutil.virtual_memory().free/1024/1024/1024
+    totalMem=psutil.virtual_memory().total/1024/1024/1024
+    swapFree=psutil.swap_memory().free/1024/1024/1024
+    swapUse=psutil.swap_memory().used/1024/1024/1024
+    swapTotal=psutil.swap_memory().total/1024/1024/1024
+    msg="-------CPU------\n"
+    for i in range(len(cpuUse)):
+        msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
+    msg+="------MM------\n"
+    msg+="used:"+str(usedMem)+"GiB\n"
+    msg+="free:"+str(freeMem)+"GiB\n"
+    msg+="total:"+str(totalMem)+"GiB\n"
+    msg+="------SM------\n"
+    msg+="used:"+str(swapUse)+"GiB\n"
+    msg+="free:"+str(swapFree)+"GiB\n"
+    msg+="total:"+str(swapTotal)+"GiB\n"
+    update.message.reply_text(msg)
+    update.message.reply_text("Getting speedtest results")
+    speedtest=speedtestp.read()
+    download=speedtest.find("Download:")
+    downloadEnd=speedtest.find("/s",download)
+    speedtestDownload=speedtest[download:downloadEnd]
+    upload=speedtest.find("Upload:")
+    uploadEnd=speedtest.find("/s",upload)
+    speedtestUpload=speedtest[upload:uploadEnd]
+    msg="-------SpeedTest-------\n"
+    msg+=speedtestDownload+"\n"
+    msg+=speedtestUpload+"\n"
+    update.message.reply_text(msg)
+def shell(bot,update):
+    cwd=os.getcwd()
+    os.chdir("/home/temp")
+    msg=update.message.text
+    msg=msg.split()
+    msg.pop(0)
+    msg=" ".join(msg)
+    msg=msg.strip()
+    if("conf.ini" in msg):
+        update.message.reply_text("Nice try :-)")
+    else:
+        if(os.path.exists("/tmp/bot")):
+            f=open("/tmp/bot/runnable.sh","w")
+        else:
+            os.mkdir("/tmp/bot")
+            f=open("/tmp/bot/runnable.sh","w")
+        f.write("#!/usr/bin/env zsh\n")
+        os.system("chmod +x /tmp/bot/runnable.sh")
+        f.write(msg+"\n")
+        f.close()
+        msg="sudo -u bot /tmp/bot/runnable.sh"
+        p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+        i=0
+        while(p.poll()==None):
+            time.sleep(1)
+            i+=1
+            if(i==5):
+                break
+        if(i==5):
+            data="Timeout killed\n"
+            p.kill()
+            data+=p.stdout.read().decode("utf-8")
+            stderrData=p.stderr.read().decode("utf-8");
+            if(stderrData):
+                data+="Errors where detected while executing!"+"\n"
+                data+=stderrData
+        else:
+            data=p.stdout.read().decode("utf-8")
+            stderrData=p.stderr.read().decode("utf-8");
+            if(stderrData):
+                data+="Errors where detected while executing!"+"\n"
+                data+=stderrData
+        #update.message.reply_text(msg)
+        update.message.reply_text(data)
+    os.chdir(cwd)
 try: 
    key=open("conf.ini",'r').read().strip()
 except: 
@@ -179,62 +157,6 @@ except:
    
 
 updater = Updater(key)
-#bot = telegram.Bot(token=key)
-#chat_id = bot.get_updates()[-1].message.chat_id
-
-#def send_changedmessage(bot,update):
- #   global changed_text
-  #  bot.send_message(chat_id=update.message.chat_id, text=changed_text, parse_mode="HTML")
-    
-    
-
-counter=-1
-def new(bot,job):
-    global counter
-    if counter==-1:
-        print("FIRST ITERATION")
-        ftitle1=open("title1.bin","rb")
-        os.system("python3 arc_get.py title2.bin link2.bin desc2.bin")
-        ftitle2=open("title2.bin","rb")
-        lchange=changeindex(ftitle1,ftitle2)
-        title2=pickle.load(open("title2.bin","rb"))
-        link2=pickle.load(open("link2.bin","rb"))
-        desc2=pickle.load(open("desc2.bin","rb"))
-    
-        for i in range(len(title2)):
-            if i in lchange:
-                text="<b>"+title2[i]+"</b>"+"<a href="+'"'+link2[i]+'"'+"> Link</a>\n"+cleanhtml(desc2[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))+"..."
-                
-                print(text)
-                bot.send_message(chat_id=open("chat_id.txt").read(), text=text, parse_mode="HTML")
-        	#print("\n\n\nSTART"+text+"END\n\n\n")
-                
-                
-                
-
-        
-    else:
-        print("second iteration")
-        ftitle2=open("title2.bin","rb")
-        os.system("python3 arc_get.py title1.bin link1.bin desc1.bin")
-        ftitle1=open("title1.bin","rb")
-        lchange=changeindex(ftitle2,ftitle1)
-        title1=pickle.load(open("title1.bin","rb"))
-        link1=pickle.load(open("link1.bin","rb"))
-        desc1=pickle.load(open("desc1.bin","rb"))
-        for i in range(len(title1)):
-            if i in lchange:
-                text="<b>"+title1[i]+"</b>"+"<a href="+'"'+link1[i]+'"'+"> Link</a>\n"+cleanhtml(desc1[i].replace("<br>","\n").replace("<br />","\n").replace("I&#039;","I"))+"..."
-                bot.send_message(chat_id=open("chat_id.txt").read(), text=text, parse_mode="HTML")
-                print(text)
-                #print("\n\n\nSTART"+text+"END\n\n\n")
-        
-    
-    counter*=-1
-    
-#job_minute = Job(new, 3600.0)
-#j=updater.job_queue
-#j.put(job_minute, next_t=0.0)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('id', id))
@@ -244,10 +166,8 @@ updater.dispatcher.add_handler(CommandHandler('about', about))
 updater.dispatcher.add_handler(CommandHandler('add', add))
 updater.dispatcher.add_handler(CommandHandler('mult', mult))
 updater.dispatcher.add_handler(CommandHandler('div', div))
-updater.dispatcher.add_handler(CommandHandler('feeds', feeds))
-updater.dispatcher.add_handler(CommandHandler('feed', feed))
-updater.dispatcher.add_handler(CommandHandler('disp', disp))
-updater.dispatcher.add_handler(CommandHandler('backup', backup))
+updater.dispatcher.add_handler(CommandHandler('sysstat', sysstat))
+updater.dispatcher.add_handler(CommandHandler('shell', shell))
 updater.start_polling()
 #updater.idle()
 
