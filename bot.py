@@ -62,8 +62,21 @@ def add(bot, update):
         sum+=float(i)
    update.message.reply_text("Sum is :"+str(sum))
 def about(bot, update):
-   f=open("about.txt",'r');
-   bot.send_message(chat_id=update.message.chat_id, text=f.read(),parse_mode="HTML")
+   data='''             <b>Destroyer Server bot!</b>
+                <i>About/Help DestroyerServer_bot</i>
+-------------------------------------------------------
+<b>Commands</b>
+1)<code> /start</code>
+2)<code> /about</code>
+3)<code> /add x1,x2,x3....</code>
+4)<code> /mult x1,x2,x3....</code>
+5)<code> /sysstat</code>
+6)<code> /shell anyLinuxCommand </code> 
+Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
+Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
+-------------------------------------------------------
+'''
+   bot.send_message(chat_id=update.message.chat_id, text=data,parse_mode="HTML")
    f.close()
    print(update.message.from_user.username+":"+update.message.text)
 def start(bot, update):
