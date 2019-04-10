@@ -72,6 +72,8 @@ def about(bot, update):
 4)<code> /mult x1,x2,x3....</code>
 5)<code> /sysstat</code>
 6)<code> /shell anyLinuxCommand </code> 
+7)<code> /memstat </code>
+8)<code> /cpustat </code>
 Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
 Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
 -------------------------------------------------------
@@ -105,6 +107,42 @@ def sysstat(bot, update):
     msg+="free:"+str(swapFree)+"GiB\n"
     msg+="total:"+str(swapTotal)+"GiB\n"
     update.message.reply_text(msg)
+    update.message.reply_text("Getting speedtest results")
+    speedtest=speedtestp.read()
+    download=speedtest.find("Download:")
+    downloadEnd=speedtest.find("/s",download)
+    speedtestDownload=speedtest[download:downloadEnd]
+    upload=speedtest.find("Upload:")
+    uploadEnd=speedtest.find("/s",upload)
+    speedtestUpload=speedtest[upload:uploadEnd]
+    msg="-------SpeedTest-------\n"
+    msg+=speedtestDownload+"\n"
+    msg+=speedtestUpload+"\n"
+    update.message.reply_text(msg)
+def cpustat(bot,update):
+    cpuUse=psutil.cpu_percent(percpu=True,interval=1)
+    msg="-------CPU------\n"
+    for i in range(len(cpuUse)):
+        msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
+    update.message.reply_text(msg)
+def memstat(bot,update):
+    usedMem=psutil.virtual_memory().used/1024/1024/1024
+    freeMem=psutil.virtual_memory().free/1024/1024/1024
+    totalMem=psutil.virtual_memory().total/1024/1024/1024
+    swapFree=psutil.swap_memory().free/1024/1024/1024
+    swapUse=psutil.swap_memory().used/1024/1024/1024
+    swapTotal=psutil.swap_memory().total/1024/1024/1024
+    msg="------MM------\n"
+    msg+="used:"+str(usedMem)+"GiB\n"
+    msg+="free:"+str(freeMem)+"GiB\n"
+    msg+="total:"+str(totalMem)+"GiB\n"
+    msg+="------SM------\n"
+    msg+="used:"+str(swapUse)+"GiB\n"
+    msg+="free:"+str(swapFree)+"GiB\n"
+    msg+="total:"+str(swapTotal)+"GiB\n"
+    update.message.reply_text(msg)
+def st(bot,update):
+    speedtestp=os.popen("speedtest")
     update.message.reply_text("Getting speedtest results")
     speedtest=speedtestp.read()
     download=speedtest.find("Download:")
@@ -180,6 +218,9 @@ updater.dispatcher.add_handler(CommandHandler('add', add))
 updater.dispatcher.add_handler(CommandHandler('mult', mult))
 updater.dispatcher.add_handler(CommandHandler('div', div))
 updater.dispatcher.add_handler(CommandHandler('sysstat', sysstat))
+updater.dispatcher.add_handler(CommandHandler('cpustat', cpustat))
+updater.dispatcher.add_handler(CommandHandler('memstat', memstat))
+updater.dispatcher.add_handler(CommandHandler('speedtest', st))
 updater.dispatcher.add_handler(CommandHandler('shell', shell))
 updater.start_polling()
 #updater.idle()
