@@ -74,6 +74,7 @@ def about(bot, update):
 6)<code> /shell anyLinuxCommand </code> 
 7)<code> /memstat </code>
 8)<code> /cpustat </code>
+9)<code> /cpuhog </code>
 Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
 Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
 -------------------------------------------------------
@@ -155,6 +156,12 @@ def st(bot,update):
     msg+=speedtestDownload+"\n"
     msg+=speedtestUpload+"\n"
     update.message.reply_text(msg)
+def cpuhog(bot,update):
+    command='''ps -aeo pcpu,pid,user,args | sort -k1 -r -n | head -1 | awk '''
+    command+="'"+'''{ print "CpuUse:"$1; print "PID:"$2; print "User:"$3; print "Command:"$4 }'''
+    command+="'"
+    p=os.popen(command)
+    update.message.reply_text(p.read())
 def shell(bot,update):
     cwd=os.getcwd()
     os.chdir("/home/temp")
@@ -221,6 +228,7 @@ updater.dispatcher.add_handler(CommandHandler('sysstat', sysstat))
 updater.dispatcher.add_handler(CommandHandler('cpustat', cpustat))
 updater.dispatcher.add_handler(CommandHandler('memstat', memstat))
 updater.dispatcher.add_handler(CommandHandler('speedtest', st))
+updater.dispatcher.add_handler(CommandHandler('cpuhog', cpuhog))
 updater.dispatcher.add_handler(CommandHandler('shell', shell))
 updater.start_polling()
 #updater.idle()
