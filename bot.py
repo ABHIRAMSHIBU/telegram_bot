@@ -1,12 +1,37 @@
 #!/usr/bin/python3
-from telegram.ext import Updater, CommandHandler,Job
+from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler
 import pickle
 import re
 import os
 import telegram
 import psutil
 import subprocess as sp
-
+import pickle
+#get superuser
+def openDB():
+    userDB=""
+    if(os.path.exists("/opt/DestroyerBot/userdb.db")):
+        f=open("/opt/DestroyerBot/userdb.db","rb")
+        userDB=pickle.load(f)
+    else:
+        userDB={}
+    return userDB
+userDB=openDB()
+def saveDB():
+    f=open("/opt/DestroyerBot/userdb.db","wb")
+    pickle.dump(userDB,f)
+    f.close()
+def addUserDB(message):
+    save=False
+    if(not (message.from_user.id in userDB.keys()) ):
+        userDB[message.from_user.id]=[]
+        save=True
+    if(not (message.chat_id in userDB[message.from_user.id])):
+        userDB[message.from_user.id].append(message.chat_id)
+        save=True
+    if(save):
+        saveDB()
+superuser=open("superuser","r").read().split("\n")[0].strip()
 def strip_html(string):
     return re.sub('<[^<]+?>', '', string).replace("&","")
 def cleanhtml(raw_html):
@@ -34,11 +59,82 @@ class item:    #creating the class
 
 
 import time
-
+def allHandle(bot,update):
+    addUserDB(update.message)
+def deleteMsg(bot,update):
+    text=""
+    msg=update.message.text
+    chat=update.message.chat_id
+    if(superuser==str(update.message.from_user.id)):
+        msgId=update.message.reply_to_message.message_id
+        chtId=update.message.reply_to_message.chat_id
+        bot.delete_message(chtId,msgId)
+        update.message.delete()
+        text="Message Deleted"
+    else:
+        text="Unauthorized"
+    if("r" in msg):
+        bot.send_message(chat,text)
+def kick(bot,update):
+    text=""
+    msg=update.message.text
+    chat=update.message.chat_id
+    for i in bot.get_chat_administrators(chat):
+        if(i.user.id ==update.message.from_user.id):
+            bot.kick_chat_member(update.message.chat_id,update.message.reply_to_message.from_user.id)
+            text="User kicked"
+            break
+        else:
+            text="Unauthorized"
+    update.message.reply_text(text)
+def unkick(bot,update):
+    text=""
+    msg=update.message.text
+    chat=update.message.chat_id
+    for i in bot.get_chat_administrators(chat):
+        if(i.user.id ==update.message.from_user.id):
+            bot.unban_chat_member(update.message.chat_id,update.message.reply_to_message.from_user.id)
+            text="User unkicked"
+            break
+        else:
+            text="Unauthorized"
+    update.message.reply_text(text)
+def whoami(bot,update):
+    text="You are "+str(update.message.from_user.full_name)+"\n"
+    if(superuser==str(update.message.from_user.id)):
+        text+="You are a superuser."+"\n"
+    text+="Your user name "+str(update.message.from_user.username)+"\n"
+    text+="Your telegram user id "+str(update.message.from_user.name)+"\n"
+    text+="Your user id "+str(update.message.from_user.id)+"\n"
+    if(update.message.from_user.id==update.message.chat_id):
+        text+="This a personal message"
+    else:
+        text+="This is a group with group id "+str(update.message.chat_id)
+    update.message.reply_text(text)
+def whoareyou(bot,update):
+    text=""
+    if(update.message.reply_to_message is not None):
+        text="You are "+str(update.message.reply_to_message.from_user.full_name)+"\n"
+        if(superuser==str(update.message.reply_to_message.from_user.id)):
+            text+="You are a superuser."+"\n"
+        text+="Your user name "+str(update.message.reply_to_message.from_user.username)+"\n"
+        text+="Your telegram user id "+str(update.message.reply_to_message.from_user.name)+"\n"
+        text+="Your user id "+str(update.message.reply_to_message.from_user.id)+"\n"
+        if(update.message.from_user.id==update.message.reply_to_message.chat_id):
+            text+="This a personal message"
+        else:
+            text+="This is a group with group id "+str(update.message.reply_to_message.chat_id)
+    else:
+        text="Did you mean /whoami ? or please tag a message"
+    update.message.reply_text(text)
 def id(bot, update):
+   if(superuser==str(update.message.from_user.id)):
+        update.message.reply_text("You are superuser.")
    text="Supergroup id: "+str(update.message.chat_id)
    update.message.reply_text(text)
    update.message.reply_text("User id: "+str(update.message.from_user.id))
+   f=open("/tmp/megDUMP","wb")
+   pickle.dump(update.message,f)
 def runs(bot, update):
    update.message.reply_text("Yup at 100%")
 
@@ -75,6 +171,9 @@ def about(bot, update):
 7)<code> /memstat </code>
 8)<code> /cpustat </code>
 9)<code> /cpuhog </code>
+10)<code> /whomai </code>
+11)<code> /del or /delete </code>
+12)<code> /whoareyou </code>
 Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
 Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
 -------------------------------------------------------
@@ -143,7 +242,7 @@ def memstat(bot,update):
     msg+="total:"+str(swapTotal)+"GiB\n"
     update.message.reply_text(msg)
 def st(bot,update):
-    speedtestp=os.popen("speedtest")
+    speedtestp=os.popen("speedtest-cli")
     update.message.reply_text("Getting speedtest results")
     speedtest=speedtestp.read()
     download=speedtest.find("Download:")
@@ -182,14 +281,23 @@ def shell(bot,update):
         os.system("chmod +x /tmp/bot/runnable.sh")
         f.write(msg+"\n")
         f.close()
-        msg="sudo -u bot /tmp/bot/runnable.sh"
+        if(superuser==str(update.message.from_user.id)):
+           msg="sudo -u abhiram /tmp/bot/runnable.sh"
+        else:
+           text="User :"+str(update.message.from_user.name)+" ran : "+msg+" userid :"+str(update.message.from_user.id)
+           bot.send_message(chat_id=int(superuser),text=text)
+           msg="sudo -u bot /tmp/bot/runnable.sh"
         p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
         i=0
         while(p.poll()==None):
             time.sleep(1)
             i+=1
-            if(i==5):
-                break
+            if(superuser==str(update.message.from_user.id)):
+                if(i==60):
+                    break
+            else:
+                if(i==5):
+                    break
         if(i==5):
             data="Timeout killed\n"
             p.kill()
@@ -230,6 +338,14 @@ updater.dispatcher.add_handler(CommandHandler('memstat', memstat))
 updater.dispatcher.add_handler(CommandHandler('speedtest', st))
 updater.dispatcher.add_handler(CommandHandler('cpuhog', cpuhog))
 updater.dispatcher.add_handler(CommandHandler('shell', shell))
+updater.dispatcher.add_handler(CommandHandler('whoami', whoami))
+updater.dispatcher.add_handler(CommandHandler('del', deleteMsg))
+updater.dispatcher.add_handler(CommandHandler('delete', deleteMsg))
+updater.dispatcher.add_handler(CommandHandler('kick', kick))
+updater.dispatcher.add_handler(CommandHandler('unkick', unkick))
+updater.dispatcher.add_handler(CommandHandler('whoareyou', whoareyou))
+unknown_handler = MessageHandler(Filters.chat, allHandle)
+updater.dispatcher.add_handler(unknown_handler)
 updater.start_polling()
 #updater.idle()
 
