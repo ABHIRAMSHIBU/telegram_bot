@@ -261,6 +261,44 @@ def cpuhog(bot,update):
     command+="'"
     p=os.popen(command)
     update.message.reply_text(p.read())
+def fixPerm(bot,update):
+    cwd=os.getcwd()
+    os.chdir("/home/temp")
+    msg="sudo chmod -R g+rwxs /mnt/build/sharedroms"
+    if(os.path.exists("/tmp/bot")):
+        f=open("/tmp/bot/runnable.sh","w")
+    else:
+        os.mkdir("/tmp/bot")
+        f=open("/tmp/bot/runnable.sh","w")
+    f.write("#!/usr/bin/env zsh\n")
+    os.system("chmod +x /tmp/bot/runnable.sh")
+    f.write(msg+"\n")
+    f.close()
+    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+    i=0
+    while(p.poll()==None):
+        time.sleep(1)
+        i+=1
+        if(i==120):
+            break
+    if(i==120):
+        data="Timeout killed\n"
+        p.kill()
+        data+=p.stdout.read().decode("utf-8")
+        stderrData=p.stderr.read().decode("utf-8");
+        if(stderrData):
+            data+="Errors where detected while executing!"+"\n"
+            data+=stderrData
+    else:
+        data=p.stdout.read().decode("utf-8")
+        stderrData=p.stderr.read().decode("utf-8");
+        if(stderrData):
+            data+="Errors where detected while executing!"+"\n"
+            data+=stderrData
+    #update.message.reply_text(msg)
+    update.message.reply_text("Permission changed\nFollowing output obtained\n"+data)
+    os.chdir(cwd)
 def shell(bot,update):
     cwd=os.getcwd()
     os.chdir("/home/temp")
@@ -338,6 +376,8 @@ updater.dispatcher.add_handler(CommandHandler('memstat', memstat))
 updater.dispatcher.add_handler(CommandHandler('speedtest', st))
 updater.dispatcher.add_handler(CommandHandler('cpuhog', cpuhog))
 updater.dispatcher.add_handler(CommandHandler('shell', shell))
+updater.dispatcher.add_handler(CommandHandler('fixPerm', fixPerm))
+updater.dispatcher.add_handler(CommandHandler('fixperm', fixPerm))
 updater.dispatcher.add_handler(CommandHandler('whoami', whoami))
 updater.dispatcher.add_handler(CommandHandler('del', deleteMsg))
 updater.dispatcher.add_handler(CommandHandler('delete', deleteMsg))
