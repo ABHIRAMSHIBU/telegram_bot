@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.7
 from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler
 import pickle
 import re
@@ -8,6 +8,9 @@ import psutil
 import subprocess as sp
 import pickle
 #get superuser
+betaMode=False
+UNAUTH=[]
+ATT=False
 def openDB():
     userDB=""
     if(os.path.exists("/opt/DestroyerBot/userdb.db")):
@@ -59,8 +62,217 @@ class item:    #creating the class
 
 
 import time
+speedTestFlag=True
 def allHandle(bot,update):
-    addUserDB(update.message)
+    global speedTestFlag
+    global ATT
+    global UNAUTH
+    try:
+        msg=update.message.text
+        if(update.message.from_user.id in UNAUTH):
+            if("i am a human" in msg.lower()):
+                UNAUTH.remove(update.message.from_user.id)
+            else:
+                update.message.delete()
+        if(len(update.message.new_chat_members) != 0):
+            update.message.reply_text("Hey there welcome!")
+            if(ATT==True):
+                bot.send_message(update.message.chat_id, "Please reply with message 'I am a human' to continue")
+                UNAUTH.append(update.message.new_chat_members[0].id)
+                
+        #bot.send_message(int(superuser),"Test "+str(msg))
+    except Exception as e:
+        bot.send_message(int(superuser),"Error "+str(e))
+    try:
+        addUserDB(update.message)
+        if(superuser==str(update.message.from_user.id) and betaMode==True):
+            msg=str(update.message.text).lower()
+            if(msg == "beta" or msg == "hey" or msg == "ssal"):
+                update.message.reply_text("BETA at your service, How may I help you.")
+            elif("beta" == msg[0:4]):
+                msg=msg[4:].strip()
+                if(("server" in msg or "system" in msg) and "status" in msg):
+                    update.message.reply_text("Getting information")
+                    cpustat(bot,update)
+                    memstat(bot,update)
+                    update.message.reply_text("Do you want speedtest results?")
+                elif("scan" in msg and ("local" in msg or "open" in msg) and "port" in msg):
+                    speedTestFlag=False
+                    update.message.reply_text("Getting nmap results")
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("nmap localhost"+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    while(p.poll()==None):
+                        time.sleep(1)
+                    data=p.stdout.read().decode("utf-8")
+                    update.message.reply_text(data)
+                elif("start" in msg and "vnc" in msg):
+                    speedTestFlag=False
+                    update.message.reply_text("Starting X11VNC")
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("x11vnc -auth guess -repeat -forever -rfbauth /home/abhiram/.vnc/passwd"+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    time.sleep(1)
+                    data=p.stdout.readline().decode()
+                    update.message.reply_text(data)
+                elif("kill" in msg and "vnc" in msg):
+                    speedTestFlag=False
+                    update.message.reply_text("Killing all vnc")
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("pkill x11vnc"+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    while(p.poll()==None):
+                        time.sleep(1)
+                    data=p.stdout.read().decode("utf-8")
+                    update.message.reply_text(data)
+                elif(("ongoing" in msg or "current" in msg or "any" in msg) and "build" in msg):
+                    speedTestFlag=False
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("ps ax | grep -v grep | grep 'make' "+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    while(p.poll()==None):
+                        time.sleep(1)
+                    data=p.stdout.read().decode()
+                    if(data!=""):
+                        update.message.reply_text("Yes")
+                    else:
+                        update.message.reply_text("No")
+                elif(("server" in msg or "system" in msg) and "temp" in msg):
+                    speedTestFlag=False
+                    update.message.reply_text("Getting temperature information")
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("sensors | grep Package"+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    while(p.poll()==None):
+                        time.sleep(1)
+                    data=p.stdout.read().decode("utf-8")
+                    update.message.reply_text(data)
+                elif("is" in msg and "running" in msg):
+                    try:
+                        speedTestFlag=False
+                        index=msg.find("is")
+                        index2=msg.find(" ",index+3)
+                        process=msg[index+3:index2]
+                        if(os.path.exists("/tmp/bot")):
+                            f=open("/tmp/bot/runnable.sh","w")
+                        else:
+                            os.mkdir("/tmp/bot")
+                            f=open("/tmp/bot/runnable.sh","w")
+                        f.write("#!/usr/bin/env zsh\n")
+                        os.system("chmod +x /tmp/bot/runnable.sh")
+                        f.write("ps ax | grep -v grep | grep '"+process+"' "+"\n")
+                        f.close()
+                        msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                        p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                        while(p.poll()==None):
+                            time.sleep(1)
+                        data=p.stdout.read().decode()
+                        if(data!=""):
+                            update.message.reply_text("Yes")
+                        else:
+                            update.message.reply_text("No")
+                    except:
+                        update.message.reply_text("Sorry critical error detected.")
+                elif("date" in msg and ("what" in msg or "tell" in msg or "today" in msg or "now" in msg)):
+                    speedTestFlag=False
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("date"+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    while(p.poll()==None):
+                        time.sleep(1)
+                    data=p.stdout.read().decode("utf-8")
+                    update.message.reply_text(data)
+                elif("time" in msg and ("what" in msg or "tell" in msg or "today" in msg or "now" in msg)):
+                    speedTestFlag=False
+                    if(os.path.exists("/tmp/bot")):
+                        f=open("/tmp/bot/runnable.sh","w")
+                    else:
+                        os.mkdir("/tmp/bot")
+                        f=open("/tmp/bot/runnable.sh","w")
+                    f.write("#!/usr/bin/env zsh\n")
+                    os.system("chmod +x /tmp/bot/runnable.sh")
+                    f.write("date +%I:%M:%S%P"+"\n")
+                    f.close()
+                    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+                    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True);
+                    while(p.poll()==None):
+                        time.sleep(1)
+                    data=p.stdout.read().decode("utf-8")
+                    update.message.reply_text(data)
+                elif(("captcha" in msg or "verify" in msg or "att" in msg) and ("enable" in msg or "disable" in msg)):
+                    if("enable" in msg):
+                        if(ATT==True):
+                            update.message.reply_text("Automated Turing Test(ATT) is already Enabled")
+                        else:
+                            ATT=True
+                            update.message.reply_text("Automated Turing Test(ATT) Enabled")
+                    elif("disable" in msg):
+                        if(ATT==True):
+                            update.message.reply_text("Automated Turing Test(ATT) Disabled")
+                            ATT=False
+                        else:
+                            update.message.reply_text("Automated Turing Test(ATT) is already Disabled")
+                        
+            elif(msg=="yes" or msg=="yeah" or msg=="yup"):
+                if(speedTestFlag==True):
+                    st(bot,update)
+                    speedTestFlag=False
+            elif(msg=="no" or msg=="never" or msg=="nop"):
+                if(speedTestFlag==True):
+                    update.message.reply_text("Ok, as you wish.")
+                    speedTestFlag=False
+                
+                    
+    except Exception as e:
+        update.message.reply_text(str(e))
 def deleteMsg(bot,update):
     text=""
     msg=update.message.text
@@ -135,6 +347,19 @@ def id(bot, update):
    update.message.reply_text("User id: "+str(update.message.from_user.id))
    f=open("/tmp/megDUMP","wb")
    pickle.dump(update.message,f)
+def beta(bot, update):
+    global betaMode
+    if(superuser==str(update.message.from_user.id)):
+        if(betaMode==False):
+            update.message.reply_text("Enabling BETA")
+            update.message.reply_text("Welcome Back "+str(update.message.from_user.full_name)+", How may I help you.")
+            betaMode=True
+        else:
+            update.message.reply_text("Disabling BETA")
+            update.message.reply_text("See you again "+str(update.message.from_user.full_name)+", Bye..")
+            betaMode=False
+    else:
+        update.message.reply_text("Sorry, You are Unauthorized to E/D BETA")
 def runs(bot, update):
    update.message.reply_text("Yup at 100%")
 
@@ -364,6 +589,7 @@ updater = Updater(key)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('id', id))
+updater.dispatcher.add_handler(CommandHandler('BETA', beta))
 updater.dispatcher.add_handler(CommandHandler('runs', runs))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('about', about))
