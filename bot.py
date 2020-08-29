@@ -282,6 +282,44 @@ def noteshandle(bot,update):
         update.message.reply_text(str(e)+" "+str(exc_tb.tb_lineno))
 #END NOTES FRONT END
 
+def quota(bot,update):
+    msg=update.message.text.replace("/quota","").strip()
+    data=""
+    if(msg==""):
+        id=update.message.from_user.id
+        username=shelluser.load(id)
+        if(username!=None):
+            msg=username
+        else:
+            update.message.reply_text("User not found, Sorry!")
+            return
+    msg="quota -u "+msg
+    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True)
+    i=0
+    while(p.poll()==None):
+        time.sleep(1)
+        i+=1
+        if(superuser==str(update.message.from_user.id)):
+            if(i==60):
+                break
+        else:
+            if(i==5):
+                break
+    if(i==5):
+        data="Timeout killed\n"
+        p.kill()
+        data+=p.stdout.read().decode("utf-8")
+        stderrData=p.stderr.read().decode("utf-8")
+        if(stderrData):
+            data+="Errors where detected while executing!"+"\n"
+            data+=stderrData
+    else:
+        data=p.stdout.read().decode("utf-8")
+        stderrData=p.stderr.read().decode("utf-8")
+        if(stderrData):
+            data+="Errors where detected while executing!"+"\n"
+            data+=stderrData
+    update.message.reply_text(data)
 
 def allHandle(bot,update):
     global speedTestFlag
@@ -878,9 +916,8 @@ updater.dispatcher.add_handler(CommandHandler('save', save))
 updater.dispatcher.add_handler(CommandHandler('clear', clear))
 updater.dispatcher.add_handler(CommandHandler('setuser', setuser))
 updater.dispatcher.add_handler(CommandHandler('getuser', getuser))
+updater.dispatcher.add_handler(CommandHandler('quota', quota))
 unknown_handler = MessageHandler(Filters.chat, allHandle)
 updater.dispatcher.add_handler(unknown_handler)
 updater.start_polling()
 #updater.idle()
-
-
