@@ -1,5 +1,5 @@
 #!/usr/bin/python3.7
-from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler
+from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler, run_async
 import pickle
 import re
 import os
@@ -13,7 +13,7 @@ from random import randint
 VERSION="1.8.1"
 #get superuser
 betaMode=False
-UNAUTH=[]
+UNAUTH=[] # Unauthorized user
 ATT=False
 def openDB():
     userDB=""
@@ -158,7 +158,6 @@ def noteshandle(bot,update):
         input=input.strip()
         space1=input.find(" ")
         space2=input.find(" ",space1+1)
-        space3=input.find(" ",space2+1)
         cmd=""
         if(space1==-1):
             cmd=input
@@ -709,6 +708,7 @@ def fixPerm(bot,update):
     #update.message.reply_text(msg)
     update.message.reply_text("Permission changed\nFollowing output obtained\n"+data)
     os.chdir(cwd)
+@run_async
 def shell(bot,update):
     cwd=os.getcwd()
     os.chdir("/home/temp")
