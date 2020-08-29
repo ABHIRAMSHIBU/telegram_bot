@@ -10,11 +10,77 @@ import base64
 import time
 import sys
 from random import randint
+#GLOBAL VARIABLES
 VERSION="1.8.1"
-#get superuser
 betaMode=False
 UNAUTH=[] # Unauthorized user
 ATT=False
+speedTestFlag=False
+#END GLOBAL VARIABLES
+
+#USER SHELL ASSOCIATION CLASS AND FUNCTIONS
+class shellUser:
+    def __init__(self,f):
+        self.filePath=f
+        self.db={}
+        self.error=0
+        if(os.path.exists(f)):
+            try:
+                f=open(f,"rb")
+                self.db=pickle.load(f)
+                f.close()
+            except:
+                self.error=1 #Problem with shell userbindings, loaded blank
+                self.db={}
+    def save(self,userid,unixname):
+        self.db[userid]=unixname
+        try:
+            f=open(self.filePath,"wb")
+            pickle.dump(self.db,f)
+        except:
+            self.error=2 #Problem with file write or serializing
+    def load(self,userid):
+        return self.db[userid]
+    def rtError(self):
+        if(self.error==0):
+            return None
+        elif(self.error==1):
+            return "Problem with shell userbindings, loaded blank"
+        elif(self.error==2):
+            return "Problem with file write or serializing"
+    def __str__(self):
+        return self.rtError(self)
+    #if(superuser==str(update.message.from_user.id)):
+shelluser = shellUser("unixToTGID.dat")
+def setuser(bot,update):
+    if(superuser==str(update.message.from_user.id)):
+        if(update.message.reply_to_message):
+            id=update.message.reply_to_message.from_user.id
+            unixName=update.message.text.replace("/setuser","").strip()
+            if(unixName==""):
+                update.message.reply_text(randomize(["UNIX name not given","/setuser <name> # <name> was not given"]))
+            else:
+                if(" " in unixName):
+                    update.message.reply_text(randomize(["Unix name cannot contain space","Given name is not a valid identifier"]))
+                else:
+                    shelluser.save(id,unixName)
+                    update.message.reply_text(randomize(["OK","Gotcha!","Aye Aye Captain"]))
+        else:
+            update.message.reply_text(randomize(["Dear SuperUser-\nYou may have not tagged a user.\nThank You\nYour friendy neighborhood DestroyerBot","Please tag a message","Sorry but you clearly needs to tag something"]))
+    else:
+        update.message.reply_text(randomize(["Sometimes you may need some sort of \"god\" to get things done","Permission denied, now show a cool UI","Access DENIED!"]))
+def getuser(bot,update):
+    try:
+        if(update.message.reply_to_message):
+            msg="Username = "+str(shelluser.load(update.message.reply_to_message.from_user.id))
+            update.message.reply_text(msg)
+        else:
+            update.message.reply_text("No tagged message to look for")
+    except:
+        update.message("No unix username for the tagged account!")
+#END USER SHELL ASSOCIATION CLASS AND FUNCTIONS
+
+#USER DB FUNCTIONS
 def openDB():
     userDB=""
     if(os.path.exists("/opt/DestroyerBot/userdb.db")):
@@ -38,17 +104,16 @@ def addUserDB(message):
         save=True
     if(save):
         saveDB()
-superuser=open("superuser","r").read().split("\n")[0].strip()
+superuser=open("superuser","r").read().split("\n")[0].strip() #Get super user
+#END USERDB FUNCTIONS
+
+#HTML STRIPPERS IDK WHY THE HELL IT EXISTS IN MY CODE
 def strip_html(string):
     return re.sub('<[^<]+?>', '', string).replace("&","")
 def cleanhtml(raw_html):
   cleanr = re.compile('<.*?>')
   cleantext = re.sub(cleanr, '', raw_html)
   return cleantext
-def randomize(l):
-    n=len(l)
-    i=randint(0,n-1)
-    return l[i]
 class item:    #creating the class
    def __init__(self):
     self.title=""
@@ -67,7 +132,16 @@ class item:    #creating the class
     self.h_creator=""
     self.h_content=""
     self.h_comment=""
+#END HTML STRIPPER
 
+# RANDOMIZERS
+def randomize(l):
+    n=len(l)
+    i=randint(0,n-1)
+    return l[i]
+# END RANDOMIZER
+
+# NOTES BACKEND
 class Notes:
     def __init__(self,basepath):
         self.basepath=basepath
@@ -136,6 +210,9 @@ class Notes:
                 self.error=False
         return out
 notes=Notes("notes")
+#END NOTES BACKEND
+
+#NOTES FRONT END
 def clear(bot,update):
     name=update.message.text.replace("/clear","").strip()
     groupid=str(update.message.chat_id)   
@@ -203,7 +280,9 @@ def noteshandle(bot,update):
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         update.message.reply_text(str(e)+" "+str(exc_tb.tb_lineno))
-speedTestFlag=False
+#END NOTES FRONT END
+
+
 def allHandle(bot,update):
     global speedTestFlag
     global ATT
@@ -451,8 +530,6 @@ Super USER alert (for security sake) by the gatekeeper @abhiramshibu
                 if(speedTestFlag==True):
                     update.message.reply_text("Ok, as you wish.")
                     speedTestFlag=False
-                
-                    
     except Exception as e:
         update.message.reply_text(str(e))
 def deleteMsg(bot,update):
@@ -588,7 +665,6 @@ Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
 -------------------------------------------------------
 '''
    bot.send_message(chat_id=update.message.chat_id, text=data,parse_mode="HTML")
-   f.close()
    print(update.message.from_user.username+":"+update.message.text)
 def start(bot, update):
     update.message.reply_text('Use /about to know more')
@@ -726,11 +802,13 @@ def shell(bot,update):
             os.mkdir("/tmp/bot")
             f=open("/tmp/bot/runnable.sh","w")
         f.write("#!/usr/bin/env zsh\n")
+        f.write("cd ~\n")
         os.system("chmod +x /tmp/bot/runnable.sh")
         f.write(msg+"\n")
         f.close()
-        if(superuser==str(update.message.from_user.id)):
-           msg="sudo -u abhiram /tmp/bot/runnable.sh"
+        if(update.message.from_user.id in shelluser.db.keys()):
+            user=shelluser.load(update.message.from_user.id)
+            msg="sudo -u "+user+" /tmp/bot/runnable.sh"
         else:
            text="User :"+str(update.message.from_user.name)+" ran : "+msg+" userid :"+str(update.message.from_user.id)
            bot.send_message(chat_id=int(superuser),text=text)
@@ -798,6 +876,8 @@ updater.dispatcher.add_handler(CommandHandler('whoareyou', whoareyou))
 updater.dispatcher.add_handler(CommandHandler('notes', noteshandle))
 updater.dispatcher.add_handler(CommandHandler('save', save))
 updater.dispatcher.add_handler(CommandHandler('clear', clear))
+updater.dispatcher.add_handler(CommandHandler('setuser', setuser))
+updater.dispatcher.add_handler(CommandHandler('getuser', getuser))
 unknown_handler = MessageHandler(Filters.chat, allHandle)
 updater.dispatcher.add_handler(unknown_handler)
 updater.start_polling()
