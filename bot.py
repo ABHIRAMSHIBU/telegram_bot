@@ -1,4 +1,5 @@
 #!/usr/bin/python3.7
+import telegram
 from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler, run_async
 import pickle
 import re
@@ -9,9 +10,10 @@ import subprocess as sp
 import base64
 import time
 import sys
+from multiprocessing import Process
+from conf import *
 from random import randint
 #GLOBAL VARIABLES
-VERSION="1.8.1"
 betaMode=False
 UNAUTH=[] # Unauthorized user
 ATT=False
@@ -48,8 +50,6 @@ class shellUser:
             return "Problem with shell userbindings, loaded blank"
         elif(self.error==2):
             return "Problem with file write or serializing"
-    def __str__(self):
-        return self.rtError(self)
     #if(superuser==str(update.message.from_user.id)):
 shelluser = shellUser("unixToTGID.dat")
 def setuser(bot,update):
@@ -83,15 +83,15 @@ def getuser(bot,update):
 #USER DB FUNCTIONS
 def openDB():
     userDB=""
-    if(os.path.exists("/opt/DestroyerBot/userdb.db")):
-        f=open("/opt/DestroyerBot/userdb.db","rb")
+    if(os.path.exists(BASEPATH+"userdb.db")):
+        f=open(BASEPATH+"userdb.db","rb")
         userDB=pickle.load(f)
     else:
         userDB={}
     return userDB
 userDB=openDB()
 def saveDB():
-    f=open("/opt/DestroyerBot/userdb.db","wb")
+    f=open(BASEPATH+"userdb.db","wb")
     pickle.dump(userDB,f)
     f.close()
 def addUserDB(message):
@@ -320,7 +320,322 @@ def quota(bot,update):
             data+="Errors where detected while executing!"+"\n"
             data+=stderrData
     update.message.reply_text(data)
+def deleteMsg(bot,update):
+    text=""
+    msg=update.message.text
+    chat=update.message.chat_id
+    if(superuser==str(update.message.from_user.id)):
+        msgId=update.message.reply_to_message.message_id
+        chtId=update.message.reply_to_message.chat_id
+        bot.delete_message(chtId,msgId)
+        update.message.delete()
+        text="Message Deleted"
+    else:
+        text="Unauthorized"
+    if("r" in msg):
+        bot.send_message(chat,text)
+def kick(bot,update):
+    text=""
+    chat=update.message.chat_id
+    for i in bot.get_chat_administrators(chat):
+        if(i.user.id ==update.message.from_user.id):
+            bot.kick_chat_member(update.message.chat_id,update.message.reply_to_message.from_user.id)
+            text="User kicked"
+            break
+        else:
+            text="Unauthorized"
+    update.message.reply_text(text)
+def unkick(bot,update):
+    text=""
+    chat=update.message.chat_id
+    for i in bot.get_chat_administrators(chat):
+        if(i.user.id ==update.message.from_user.id):
+            bot.unban_chat_member(update.message.chat_id,update.message.reply_to_message.from_user.id)
+            text="User unkicked"
+            break
+        else:
+            text="Unauthorized"
+    update.message.reply_text(text)
+def whoami(bot,update):
+    text="You are "+str(update.message.from_user.full_name)+"\n"
+    if(superuser==str(update.message.from_user.id)):
+        text+="You are a superuser."+"\n"
+    text+="Your user name "+str(update.message.from_user.username)+"\n"
+    text+="Your telegram user id "+str(update.message.from_user.name)+"\n"
+    text+="Your user id "+str(update.message.from_user.id)+"\n"
+    if(update.message.from_user.id==update.message.chat_id):
+        text+="This a personal message"
+    else:
+        text+="This is a group with group id "+str(update.message.chat_id)
+    update.message.reply_text(text)
+def whoareyou(bot,update):
+    text=""
+    if(update.message.reply_to_message is not None):
+        text="You are "+str(update.message.reply_to_message.from_user.full_name)+"\n"
+        if(superuser==str(update.message.reply_to_message.from_user.id)):
+            text+="You are a superuser."+"\n"
+        text+="Your user name "+str(update.message.reply_to_message.from_user.username)+"\n"
+        text+="Your telegram user id "+str(update.message.reply_to_message.from_user.name)+"\n"
+        text+="Your user id "+str(update.message.reply_to_message.from_user.id)+"\n"
+        if(update.message.from_user.id==update.message.reply_to_message.chat_id):
+            text+="This a personal message"
+        else:
+            text+="This is a group with group id "+str(update.message.reply_to_message.chat_id)
+    else:
+        text="Did you mean /whoami ? or please tag a message"
+    update.message.reply_text(text)
+def id(bot, update):
+   if(superuser==str(update.message.from_user.id)):
+        update.message.reply_text("You are superuser.")
+   text="Supergroup id: "+str(update.message.chat_id)
+   update.message.reply_text(text)
+   update.message.reply_text("User id: "+str(update.message.from_user.id))
+   f=open("/tmp/megDUMP","wb")
+   pickle.dump(update.message,f)
+def beta(bot, update):
+    global betaMode
+    if(superuser==str(update.message.from_user.id)):
+        if(betaMode==True or os.path.exists(BASEPATH+"beta")):
+            os.system("rm /opt/DestroyerBot/beta")
+            update.message.reply_text("Disabling BETA")
+            update.message.reply_text("See you again "+str(update.message.from_user.full_name)+", Bye..")
+            betaMode=False
+        else:
+            os.system("touch /opt/DestroyerBot/beta")
+            update.message.reply_text("Enabling BETA")
+            update.message.reply_text("Welcome Back "+str(update.message.from_user.full_name)+", How may I help you.")
+            betaMode=True
+    else:
+        update.message.reply_text("Sorry, You are Unauthorized to E/D BETA")
+def runs(bot, update):
+   update.message.reply_text("Yup at 100%")
 
+def mult(bot, update):
+   print(update.message.from_user.username+":"+update.message.text)
+   message=update.message.text
+   list=message.strip("/mult").strip().split(",")
+   multi=1.0
+   for i in list :
+        multi*=float(i)
+   update.message.reply_text("Answer is :"+str(multi))
+def div(bot, update):
+   print(update.message.from_user.username+":"+update.message.text)
+   update.message.reply_text("Answer is, im not capable yet!")
+def add(bot, update):
+   print(update.message.from_user.username+":"+update.message.text)
+   message=update.message.text
+   list=message.strip("/add").strip().split(",")
+   sum=0.0
+   for i in list :
+        sum+=float(i)
+   update.message.reply_text("Sum is :"+str(sum))
+def about(bot, update):
+   data='''             <b>Destroyer Server bot!</b>
+                <i>About/Help DestroyerServer_bot</i>
+-------------------------------------------------------
+<b>Commands</b>
+1)<code> /start</code>
+2)<code> /about</code>
+3)<code> /add x1,x2,x3....</code>
+4)<code> /mult x1,x2,x3....</code>
+5)<code> /sysstat</code>
+6)<code> /shell anyLinuxCommand </code> 
+7)<code> /memstat </code>
+8)<code> /cpustat </code>
+9)<code> /cpuhog </code>
+10)<code> /whomai </code>
+11)<code> /del or /delete </code>
+12)<code> /whoareyou </code>
+<b> BETA </b>
+1) Beta what can you do?
+Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
+Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
+-------------------------------------------------------
+'''
+   bot.send_message(chat_id=update.message.chat_id, text=data,parse_mode="HTML")
+   print(update.message.from_user.username+":"+update.message.text)
+def start(bot, update):
+    update.message.reply_text('Use /about to know more')
+    print(update.message.from_user.username+":"+update.message.text)
+def hello(bot, update):
+    update.message.reply_text('Hello '+update.message.from_user.first_name)
+def sysstat(bot, update):
+    speedtestp=os.popen("speedtest")
+    cpuUse=psutil.cpu_percent(percpu=True,interval=1)
+    usedMem=psutil.virtual_memory().used/1024/1024/1024
+    freeMem=psutil.virtual_memory().free/1024/1024/1024
+    totalMem=psutil.virtual_memory().total/1024/1024/1024
+    swapFree=psutil.swap_memory().free/1024/1024/1024
+    swapUse=psutil.swap_memory().used/1024/1024/1024
+    swapTotal=psutil.swap_memory().total/1024/1024/1024
+    msg="-------CPU------\n"
+    for i in range(len(cpuUse)):
+        msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
+    msg+="------MM------\n"
+    msg+="used:"+str(usedMem)+"GiB\n"
+    msg+="free:"+str(freeMem)+"GiB\n"
+    msg+="total:"+str(totalMem)+"GiB\n"
+    msg+="------SM------\n"
+    msg+="used:"+str(swapUse)+"GiB\n"
+    msg+="free:"+str(swapFree)+"GiB\n"
+    msg+="total:"+str(swapTotal)+"GiB\n"
+    update.message.reply_text(msg)
+    update.message.reply_text("Getting speedtest results")
+    speedtest=speedtestp.read()
+    download=speedtest.find("Download:")
+    downloadEnd=speedtest.find("/s",download)
+    speedtestDownload=speedtest[download:downloadEnd]
+    upload=speedtest.find("Upload:")
+    uploadEnd=speedtest.find("/s",upload)
+    speedtestUpload=speedtest[upload:uploadEnd]
+    msg="-------SpeedTest-------\n"
+    msg+=speedtestDownload+"\n"
+    msg+=speedtestUpload+"\n"
+    update.message.reply_text(msg)
+def cpustat(bot,update):
+    cpuUse=psutil.cpu_percent(percpu=True,interval=1)
+    msg="-------CPU------\n"
+    for i in range(len(cpuUse)):
+        msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
+    update.message.reply_text(msg)
+def memstat(bot,update):
+    usedMem=psutil.virtual_memory().used/1024/1024/1024
+    freeMem=psutil.virtual_memory().free/1024/1024/1024
+    totalMem=psutil.virtual_memory().total/1024/1024/1024
+    swapFree=psutil.swap_memory().free/1024/1024/1024
+    swapUse=psutil.swap_memory().used/1024/1024/1024
+    swapTotal=psutil.swap_memory().total/1024/1024/1024
+    msg="------MM------\n"
+    msg+="used:"+str(usedMem)+"GiB\n"
+    msg+="free:"+str(freeMem)+"GiB\n"
+    msg+="total:"+str(totalMem)+"GiB\n"
+    msg+="------SM------\n"
+    msg+="used:"+str(swapUse)+"GiB\n"
+    msg+="free:"+str(swapFree)+"GiB\n"
+    msg+="total:"+str(swapTotal)+"GiB\n"
+    update.message.reply_text(msg)
+def st(bot,update):
+    speedtestp=os.popen("speedtest-cli")
+    update.message.reply_text("Getting speedtest results")
+    speedtest=speedtestp.read()
+    download=speedtest.find("Download:")
+    downloadEnd=speedtest.find("/s",download)
+    speedtestDownload=speedtest[download:downloadEnd]
+    upload=speedtest.find("Upload:")
+    uploadEnd=speedtest.find("/s",upload)
+    speedtestUpload=speedtest[upload:uploadEnd]
+    msg="-------SpeedTest-------\n"
+    msg+=speedtestDownload+"\n"
+    msg+=speedtestUpload+"\n"
+    update.message.reply_text(msg)
+def cpuhog(bot,update):
+    command='''ps -aeo pcpu,pid,user,args | sort -k1 -r -n | head -1 | awk '''
+    command+="'"+'''{ print "CpuUse:"$1; print "PID:"$2; print "User:"$3; print "Command:"$4 }'''
+    command+="'"
+    p=os.popen(command)
+    data=p.read()
+    update.message.reply_text(data)
+    return data
+def fixPerm(bot,update):
+    cwd=os.getcwd()
+    os.chdir("/home/temp")
+    msg="sudo chmod -R g+rwxs /mnt/build/sharedroms"
+    if(os.path.exists("/tmp/bot")):
+        f=open("/tmp/bot/runnable.sh","w")
+    else:
+        os.mkdir("/tmp/bot")
+        f=open("/tmp/bot/runnable.sh","w")
+    f.write("#!/usr/bin/env zsh\n")
+    os.system("chmod +x /tmp/bot/runnable.sh")
+    f.write(msg+"\n")
+    f.close()
+    msg="sudo -u abhiram /tmp/bot/runnable.sh"
+    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True)
+    i=0
+    while(p.poll()==None):
+        time.sleep(1)
+        i+=1
+        if(i==120):
+            break
+    if(i==120):
+        data="Timeout killed\n"
+        p.kill()
+        data+=p.stdout.read().decode("utf-8")
+        stderrData=p.stderr.read().decode("utf-8")
+        if(stderrData):
+            data+="Errors where detected while executing!"+"\n"
+            data+=stderrData
+    else:
+        data=p.stdout.read().decode("utf-8")
+        stderrData=p.stderr.read().decode("utf-8")
+        if(stderrData):
+            data+="Errors where detected while executing!"+"\n"
+            data+=stderrData
+    #update.message.reply_text(msg)
+    update.message.reply_text("Permission changed\nFollowing output obtained\n"+data)
+    os.chdir(cwd)
+@run_async
+def shell(bot,update):
+    cwd=os.getcwd()
+    os.chdir("/home/temp")
+    msg=update.message.text
+    msg=msg.split()
+    msg.pop(0)
+    msg=" ".join(msg)
+    msg=msg.strip()
+    if("conf.ini" in msg):
+        update.message.reply_text("Nice try :-)")
+    else:
+        if(os.path.exists("/tmp/bot")):
+            f=open("/tmp/bot/runnable.sh","w")
+        else:
+            os.mkdir("/tmp/bot")
+            f=open("/tmp/bot/runnable.sh","w")
+        f.write("#!/usr/bin/env zsh\n")
+        f.write("cd ~\n")
+        os.system("chmod +x /tmp/bot/runnable.sh")
+        f.write(msg+"\n")
+        f.close()
+        if(update.message.from_user.id in shelluser.db.keys()):
+            user=shelluser.load(update.message.from_user.id)
+            msg="sudo -u "+user+" /tmp/bot/runnable.sh"
+        else:
+           text="User :"+str(update.message.from_user.name)+" ran : "+msg+" userid :"+str(update.message.from_user.id)
+           bot.send_message(chat_id=int(superuser),text=text)
+           msg="sudo -u bot /tmp/bot/runnable.sh"
+        p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True)
+        i=0
+        while(p.poll()==None):
+            time.sleep(1)
+            i+=1
+            if(superuser==str(update.message.from_user.id)):
+                if(i==60):
+                    break
+            else:
+                if(i==5):
+                    break
+        if(i==5):
+            data="Timeout killed\n"
+            p.kill()
+            data+=p.stdout.read().decode("utf-8")
+            stderrData=p.stderr.read().decode("utf-8")
+            if(stderrData):
+                data+="Errors where detected while executing!"+"\n"
+                data+=stderrData
+        else:
+            data=p.stdout.read().decode("utf-8")
+            stderrData=p.stderr.read().decode("utf-8")
+            if(stderrData):
+                data+="Errors where detected while executing!"+"\n"
+                data+=stderrData
+        #update.message.reply_text(msg)
+        update.message.reply_text(data)
+    os.chdir(cwd)
+try: 
+   key=open("conf.ini",'r').read().strip()
+except: 
+   print("Error occured, try running setup.py")
+   exit()
 def allHandle(bot,update):
     global speedTestFlag
     global ATT
@@ -328,6 +643,8 @@ def allHandle(bot,update):
     global betaMode
     try:
         msg=update.message.text
+        if(msg==None):
+            return
         if(msg[0]=='#'):
             groupid=str(update.message.chat_id)
             msg=msg.replace("#","")
@@ -350,10 +667,11 @@ def allHandle(bot,update):
                 
         #bot.send_message(int(superuser),"Test "+str(msg))
     except Exception as e:
-        bot.send_message(int(superuser),"Error "+str(e))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        bot.send_message(int(superuser),"Error "+str(e)+" Line "+str(exc_tb.tb_lineno))
     try:
         addUserDB(update.message)
-        if(betaMode==True or os.path.exists("/opt/DestroyerBot/beta")):
+        if(betaMode==True or os.path.exists(BASEPATH+"beta")):
             try:
                 msg=msg.lower()
             except:
@@ -380,6 +698,16 @@ Super USER alert (for security sake) by the gatekeeper @abhiramshibu
  Beta enable ATT / Beta enable captcha
                     '''
                     update.message.reply_text(text)
+                elif("memory" in msg and ("report" in msg or "status" in msg or "usage" in msg or "free" in msg or "utilization" in msg)):
+                    memstat(bot,update)
+                elif("cpu" in msg and ("report" in msg or "status" in msg or "usage" in msg or "utilization" in msg)):
+                    cpustat(bot,update)
+                elif(("using" in msg or "hog" in msg or "bottlekneck" in msg) and "cpu" in msg):
+                    data=cpuhog(bot,update)
+                    if("who" in msg):
+                        update.message.reply_text(data.split("\n")[2].replace("User:",""))
+                    elif("what" in msg):
+                        update.message.reply_text(data.split("\n")[3].replace("Command:","")+" "+data.split("\n")[1].replace("PID:",""))
                 elif(("server" in msg or "system" in msg or "report" in msg) and "status" in msg):
                     update.message.reply_text("Getting information")
                     cpustat(bot,update)
@@ -570,324 +898,20 @@ Super USER alert (for security sake) by the gatekeeper @abhiramshibu
                     speedTestFlag=False
     except Exception as e:
         update.message.reply_text(str(e))
-def deleteMsg(bot,update):
-    text=""
-    msg=update.message.text
-    chat=update.message.chat_id
-    if(superuser==str(update.message.from_user.id)):
-        msgId=update.message.reply_to_message.message_id
-        chtId=update.message.reply_to_message.chat_id
-        bot.delete_message(chtId,msgId)
-        update.message.delete()
-        text="Message Deleted"
-    else:
-        text="Unauthorized"
-    if("r" in msg):
-        bot.send_message(chat,text)
-def kick(bot,update):
-    text=""
-    chat=update.message.chat_id
-    for i in bot.get_chat_administrators(chat):
-        if(i.user.id ==update.message.from_user.id):
-            bot.kick_chat_member(update.message.chat_id,update.message.reply_to_message.from_user.id)
-            text="User kicked"
-            break
-        else:
-            text="Unauthorized"
-    update.message.reply_text(text)
-def unkick(bot,update):
-    text=""
-    chat=update.message.chat_id
-    for i in bot.get_chat_administrators(chat):
-        if(i.user.id ==update.message.from_user.id):
-            bot.unban_chat_member(update.message.chat_id,update.message.reply_to_message.from_user.id)
-            text="User unkicked"
-            break
-        else:
-            text="Unauthorized"
-    update.message.reply_text(text)
-def whoami(bot,update):
-    text="You are "+str(update.message.from_user.full_name)+"\n"
-    if(superuser==str(update.message.from_user.id)):
-        text+="You are a superuser."+"\n"
-    text+="Your user name "+str(update.message.from_user.username)+"\n"
-    text+="Your telegram user id "+str(update.message.from_user.name)+"\n"
-    text+="Your user id "+str(update.message.from_user.id)+"\n"
-    if(update.message.from_user.id==update.message.chat_id):
-        text+="This a personal message"
-    else:
-        text+="This is a group with group id "+str(update.message.chat_id)
-    update.message.reply_text(text)
-def whoareyou(bot,update):
-    text=""
-    if(update.message.reply_to_message is not None):
-        text="You are "+str(update.message.reply_to_message.from_user.full_name)+"\n"
-        if(superuser==str(update.message.reply_to_message.from_user.id)):
-            text+="You are a superuser."+"\n"
-        text+="Your user name "+str(update.message.reply_to_message.from_user.username)+"\n"
-        text+="Your telegram user id "+str(update.message.reply_to_message.from_user.name)+"\n"
-        text+="Your user id "+str(update.message.reply_to_message.from_user.id)+"\n"
-        if(update.message.from_user.id==update.message.reply_to_message.chat_id):
-            text+="This a personal message"
-        else:
-            text+="This is a group with group id "+str(update.message.reply_to_message.chat_id)
-    else:
-        text="Did you mean /whoami ? or please tag a message"
-    update.message.reply_text(text)
-def id(bot, update):
-   if(superuser==str(update.message.from_user.id)):
-        update.message.reply_text("You are superuser.")
-   text="Supergroup id: "+str(update.message.chat_id)
-   update.message.reply_text(text)
-   update.message.reply_text("User id: "+str(update.message.from_user.id))
-   f=open("/tmp/megDUMP","wb")
-   pickle.dump(update.message,f)
-def beta(bot, update):
-    global betaMode
-    if(superuser==str(update.message.from_user.id)):
-        if(betaMode==True or os.path.exists("/opt/DestroyerBot/beta")):
-            os.system("rm /opt/DestroyerBot/beta")
-            update.message.reply_text("Disabling BETA")
-            update.message.reply_text("See you again "+str(update.message.from_user.full_name)+", Bye..")
-            betaMode=False
-        else:
-            os.system("touch /opt/DestroyerBot/beta")
-            update.message.reply_text("Enabling BETA")
-            update.message.reply_text("Welcome Back "+str(update.message.from_user.full_name)+", How may I help you.")
-            betaMode=True
-    else:
-        update.message.reply_text("Sorry, You are Unauthorized to E/D BETA")
-def runs(bot, update):
-   update.message.reply_text("Yup at 100%")
-
-def mult(bot, update):
-   print(update.message.from_user.username+":"+update.message.text)
-   message=update.message.text
-   list=message.strip("/mult").strip().split(",")
-   multi=1.0
-   for i in list :
-        multi*=float(i)
-   update.message.reply_text("Answer is :"+str(multi))
-def div(bot, update):
-   print(update.message.from_user.username+":"+update.message.text)
-   update.message.reply_text("Answer is, im not capable yet!")
-def add(bot, update):
-   print(update.message.from_user.username+":"+update.message.text)
-   message=update.message.text
-   list=message.strip("/add").strip().split(",")
-   sum=0.0
-   for i in list :
-        sum+=float(i)
-   update.message.reply_text("Sum is :"+str(sum))
-def about(bot, update):
-   data='''             <b>Destroyer Server bot!</b>
-                <i>About/Help DestroyerServer_bot</i>
--------------------------------------------------------
-<b>Commands</b>
-1)<code> /start</code>
-2)<code> /about</code>
-3)<code> /add x1,x2,x3....</code>
-4)<code> /mult x1,x2,x3....</code>
-5)<code> /sysstat</code>
-6)<code> /shell anyLinuxCommand </code> 
-7)<code> /memstat </code>
-8)<code> /cpustat </code>
-9)<code> /cpuhog </code>
-10)<code> /whomai </code>
-11)<code> /del or /delete </code>
-12)<code> /whoareyou </code>
-<b> BETA </b>
-1) Beta what can you do?
-Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
-Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
--------------------------------------------------------
-'''
-   bot.send_message(chat_id=update.message.chat_id, text=data,parse_mode="HTML")
-   print(update.message.from_user.username+":"+update.message.text)
-def start(bot, update):
-    update.message.reply_text('Use /about to know more')
-    print(update.message.from_user.username+":"+update.message.text)
-def hello(bot, update):
-    update.message.reply_text('Hello '+update.message.from_user.first_name)
-def sysstat(bot, update):
-    speedtestp=os.popen("speedtest")
-    cpuUse=psutil.cpu_percent(percpu=True,interval=1)
-    usedMem=psutil.virtual_memory().used/1024/1024/1024
-    freeMem=psutil.virtual_memory().free/1024/1024/1024
-    totalMem=psutil.virtual_memory().total/1024/1024/1024
-    swapFree=psutil.swap_memory().free/1024/1024/1024
-    swapUse=psutil.swap_memory().used/1024/1024/1024
-    swapTotal=psutil.swap_memory().total/1024/1024/1024
-    msg="-------CPU------\n"
-    for i in range(len(cpuUse)):
-        msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
-    msg+="------MM------\n"
-    msg+="used:"+str(usedMem)+"GiB\n"
-    msg+="free:"+str(freeMem)+"GiB\n"
-    msg+="total:"+str(totalMem)+"GiB\n"
-    msg+="------SM------\n"
-    msg+="used:"+str(swapUse)+"GiB\n"
-    msg+="free:"+str(swapFree)+"GiB\n"
-    msg+="total:"+str(swapTotal)+"GiB\n"
-    update.message.reply_text(msg)
-    update.message.reply_text("Getting speedtest results")
-    speedtest=speedtestp.read()
-    download=speedtest.find("Download:")
-    downloadEnd=speedtest.find("/s",download)
-    speedtestDownload=speedtest[download:downloadEnd]
-    upload=speedtest.find("Upload:")
-    uploadEnd=speedtest.find("/s",upload)
-    speedtestUpload=speedtest[upload:uploadEnd]
-    msg="-------SpeedTest-------\n"
-    msg+=speedtestDownload+"\n"
-    msg+=speedtestUpload+"\n"
-    update.message.reply_text(msg)
-def cpustat(bot,update):
-    cpuUse=psutil.cpu_percent(percpu=True,interval=1)
-    msg="-------CPU------\n"
-    for i in range(len(cpuUse)):
-        msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
-    update.message.reply_text(msg)
-def memstat(bot,update):
-    usedMem=psutil.virtual_memory().used/1024/1024/1024
-    freeMem=psutil.virtual_memory().free/1024/1024/1024
-    totalMem=psutil.virtual_memory().total/1024/1024/1024
-    swapFree=psutil.swap_memory().free/1024/1024/1024
-    swapUse=psutil.swap_memory().used/1024/1024/1024
-    swapTotal=psutil.swap_memory().total/1024/1024/1024
-    msg="------MM------\n"
-    msg+="used:"+str(usedMem)+"GiB\n"
-    msg+="free:"+str(freeMem)+"GiB\n"
-    msg+="total:"+str(totalMem)+"GiB\n"
-    msg+="------SM------\n"
-    msg+="used:"+str(swapUse)+"GiB\n"
-    msg+="free:"+str(swapFree)+"GiB\n"
-    msg+="total:"+str(swapTotal)+"GiB\n"
-    update.message.reply_text(msg)
-def st(bot,update):
-    speedtestp=os.popen("speedtest-cli")
-    update.message.reply_text("Getting speedtest results")
-    speedtest=speedtestp.read()
-    download=speedtest.find("Download:")
-    downloadEnd=speedtest.find("/s",download)
-    speedtestDownload=speedtest[download:downloadEnd]
-    upload=speedtest.find("Upload:")
-    uploadEnd=speedtest.find("/s",upload)
-    speedtestUpload=speedtest[upload:uploadEnd]
-    msg="-------SpeedTest-------\n"
-    msg+=speedtestDownload+"\n"
-    msg+=speedtestUpload+"\n"
-    update.message.reply_text(msg)
-def cpuhog(bot,update):
-    command='''ps -aeo pcpu,pid,user,args | sort -k1 -r -n | head -1 | awk '''
-    command+="'"+'''{ print "CpuUse:"$1; print "PID:"$2; print "User:"$3; print "Command:"$4 }'''
-    command+="'"
-    p=os.popen(command)
-    update.message.reply_text(p.read())
-def fixPerm(bot,update):
-    cwd=os.getcwd()
-    os.chdir("/home/temp")
-    msg="sudo chmod -R g+rwxs /mnt/build/sharedroms"
-    if(os.path.exists("/tmp/bot")):
-        f=open("/tmp/bot/runnable.sh","w")
-    else:
-        os.mkdir("/tmp/bot")
-        f=open("/tmp/bot/runnable.sh","w")
-    f.write("#!/usr/bin/env zsh\n")
-    os.system("chmod +x /tmp/bot/runnable.sh")
-    f.write(msg+"\n")
-    f.close()
-    msg="sudo -u abhiram /tmp/bot/runnable.sh"
-    p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True)
-    i=0
-    while(p.poll()==None):
-        time.sleep(1)
-        i+=1
-        if(i==120):
-            break
-    if(i==120):
-        data="Timeout killed\n"
-        p.kill()
-        data+=p.stdout.read().decode("utf-8")
-        stderrData=p.stderr.read().decode("utf-8")
-        if(stderrData):
-            data+="Errors where detected while executing!"+"\n"
-            data+=stderrData
-    else:
-        data=p.stdout.read().decode("utf-8")
-        stderrData=p.stderr.read().decode("utf-8")
-        if(stderrData):
-            data+="Errors where detected while executing!"+"\n"
-            data+=stderrData
-    #update.message.reply_text(msg)
-    update.message.reply_text("Permission changed\nFollowing output obtained\n"+data)
-    os.chdir(cwd)
-@run_async
-def shell(bot,update):
-    cwd=os.getcwd()
-    os.chdir("/home/temp")
-    msg=update.message.text
-    msg=msg.split()
-    msg.pop(0)
-    msg=" ".join(msg)
-    msg=msg.strip()
-    if("conf.ini" in msg):
-        update.message.reply_text("Nice try :-)")
-    else:
-        if(os.path.exists("/tmp/bot")):
-            f=open("/tmp/bot/runnable.sh","w")
-        else:
-            os.mkdir("/tmp/bot")
-            f=open("/tmp/bot/runnable.sh","w")
-        f.write("#!/usr/bin/env zsh\n")
-        f.write("cd ~\n")
-        os.system("chmod +x /tmp/bot/runnable.sh")
-        f.write(msg+"\n")
-        f.close()
-        if(update.message.from_user.id in shelluser.db.keys()):
-            user=shelluser.load(update.message.from_user.id)
-            msg="sudo -u "+user+" /tmp/bot/runnable.sh"
-        else:
-           text="User :"+str(update.message.from_user.name)+" ran : "+msg+" userid :"+str(update.message.from_user.id)
-           bot.send_message(chat_id=int(superuser),text=text)
-           msg="sudo -u bot /tmp/bot/runnable.sh"
-        p=sp.Popen(msg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE,shell=True)
-        i=0
-        while(p.poll()==None):
-            time.sleep(1)
-            i+=1
-            if(superuser==str(update.message.from_user.id)):
-                if(i==60):
-                    break
-            else:
-                if(i==5):
-                    break
-        if(i==5):
-            data="Timeout killed\n"
-            p.kill()
-            data+=p.stdout.read().decode("utf-8")
-            stderrData=p.stderr.read().decode("utf-8")
-            if(stderrData):
-                data+="Errors where detected while executing!"+"\n"
-                data+=stderrData
-        else:
-            data=p.stdout.read().decode("utf-8")
-            stderrData=p.stderr.read().decode("utf-8")
-            if(stderrData):
-                data+="Errors where detected while executing!"+"\n"
-                data+=stderrData
-        #update.message.reply_text(msg)
-        update.message.reply_text(data)
-    os.chdir(cwd)
-try: 
-   key=open("conf.ini",'r').read().strip()
-except: 
-   print("Error occured, try running setup.py")
-   exit()
-   
-
+bot=telegram.Bot(key)
+def apcUPS():
+    f=None
+    if(os.path.exists(APCLOG)):
+        f = sp.Popen(['tail','-F',APCLOG],stdout=sp.PIPE,stderr=sp.PIPE)
+        bot.send_message(superuser,"File Opened")
+    if(f):
+        while True:
+            line = f.stdout.readline().decode()
+            bot.send_message(superuser,line)
+            bot.send_message(MAINGROUP,line)
+p=Process(target=apcUPS)
+p.start()
 updater = Updater(key)
-
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('id', id))
 updater.dispatcher.add_handler(CommandHandler('BETA', beta))
