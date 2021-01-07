@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 cd /opt/DestroyerBot
-./bot.py
+./bot.py > /tmp/bot.log
