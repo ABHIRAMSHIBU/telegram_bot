@@ -19,7 +19,7 @@ betaMode=False
 UNAUTH=[] # Unauthorized user
 ATT=False
 speedTestFlag=False
-VERSION=2.0 # Uses new API
+
 #END GLOBAL VARIABLES
 
 #USER SHELL ASSOCIATION CLASS AND FUNCTIONS
