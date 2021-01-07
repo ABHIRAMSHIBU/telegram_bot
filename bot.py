@@ -1,6 +1,7 @@
-#!/usr/bin/python3.7
+#!/usr/bin/python3.9
 import telegram
-from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler, run_async
+from telegram import Update
+from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler, run_async, CallbackContext
 import pickle
 import re
 import os
@@ -10,7 +11,7 @@ import subprocess as sp
 import base64
 import time
 import sys
-from multiprocessing import Process
+from threading import Thread
 from conf import *
 from random import randint
 #GLOBAL VARIABLES
@@ -18,6 +19,7 @@ betaMode=False
 UNAUTH=[] # Unauthorized user
 ATT=False
 speedTestFlag=False
+VERSION=2.0 # Uses new API
 #END GLOBAL VARIABLES
 
 #USER SHELL ASSOCIATION CLASS AND FUNCTIONS
@@ -52,24 +54,34 @@ class shellUser:
             return "Problem with file write or serializing"
     #if(superuser==str(update.message.from_user.id)):
 shelluser = shellUser("unixToTGID.dat")
-def setuser(bot,update):
+def setuser(update: Update, context: CallbackContext):
+    bot = context.bot
     if(superuser==str(update.message.from_user.id)):
         if(update.message.reply_to_message):
             id=update.message.reply_to_message.from_user.id
             unixName=update.message.text.replace("/setuser","").strip()
             if(unixName==""):
-                update.message.reply_text(randomize(["UNIX name not given","/setuser <name> # <name> was not given"]))
+                update.message.reply_text(randomize(["UNIX name not given",
+                                                     "/setuser <name> # <name> was not given"]))
             else:
                 if(" " in unixName):
-                    update.message.reply_text(randomize(["Unix name cannot contain space","Given name is not a valid identifier"]))
+                    update.message.reply_text(randomize(["Unix name cannot contain space",
+                                                         "Given name is not a valid identifier"]))
                 else:
                     shelluser.save(id,unixName)
-                    update.message.reply_text(randomize(["OK","Gotcha!","Aye Aye Captain"]))
+                    update.message.reply_text(randomize(["OK",
+                                                         "Gotcha!",
+                                                         "Aye Aye Captain"]))
         else:
-            update.message.reply_text(randomize(["Dear SuperUser-\nYou may have not tagged a user.\nThank You\nYour friendy neighborhood DestroyerBot","Please tag a message","Sorry but you clearly needs to tag something"]))
+            update.message.reply_text(randomize(["Dear SuperUser-\nYou may have not tagged a user.\nThank You\nYour friendy neighborhood DestroyerBot",
+                                                 "Please tag a message",
+                                                 "Sorry but you clearly needs to tag something"]))
     else:
-        update.message.reply_text(randomize(["Sometimes you may need some sort of \"god\" to get things done","Permission denied, now show a cool UI","Access DENIED!"]))
-def getuser(bot,update):
+        update.message.reply_text(randomize(["Sometimes you may need some sort of \"god\" to get things done",
+                                             "Permission denied, now show a cool UI",
+                                             "Access DENIED!"]))
+def getuser(update: Update, context: CallbackContext):
+    bot = context.bot
     try:
         if(update.message.reply_to_message):
             msg="Username = "+str(shelluser.load(update.message.reply_to_message.from_user.id))
@@ -169,7 +181,11 @@ class Notes:
             reply="Entry already exists, use /notes overwrite <name> <data>"
         else:
             f=open(path+"/"+str(name),"wb")
-            f.write(base64.encodebytes(data.encode()))
+            f1=open("/tmp/test1","w")
+            f1.write(data)
+            f1.close()
+            f.write(data.encode())
+            f.write(b"\n")
             f.write(str(user).encode())
             f.close()
             reply="Success!"
@@ -195,7 +211,7 @@ class Notes:
             return "Note don't exist"
         data=f.read()
         data=data.decode().split("\n")
-        data=base64.decodebytes(data[0].encode()).decode()
+        data="\n".join(data[:-1])
         reply=data
         return reply
     def listNotes(self,group):
@@ -213,12 +229,14 @@ notes=Notes("notes")
 #END NOTES BACKEND
 
 #NOTES FRONT END
-def clear(bot,update):
+def clear(update: Update, context: CallbackContext):
+    bot = context.bot
     name=update.message.text.replace("/clear","").strip()
     groupid=str(update.message.chat_id)   
     reply=notes.remove(groupid,name)
     update.message.reply_text(reply)
-def save(bot,update):
+def save(update: Update, context: CallbackContext):
+    bot = context.bot
     if(update.message.reply_to_message):
         userid=update.message.from_user.id
         data=update.message.reply_to_message.text
@@ -227,8 +245,11 @@ def save(bot,update):
         reply=notes.add(groupid,name,data,userid)
         update.message.reply_text(reply)
     else:
-        update.message.reply_text(randomize(["Please tag a message!","Did you forget to tag?","Knock Knock who is there?.. No one"]))
-def noteshandle(bot,update):
+        update.message.reply_text(randomize(["Please tag a message!",
+                                             "Did you forget to tag?",
+                                             "Knock Knock who is there?.. No one"]))
+def noteshandle(update: Update, context: CallbackContext):
+    bot = context.bot
     try:
         input=update.message.text
         input=input.replace("/notes","")
@@ -265,7 +286,8 @@ def noteshandle(bot,update):
             if(cmd=="remove"):
                 update.message.reply_text(notes.remove(groupid,name))
             else:
-                update.message.reply_text(notes.read(groupid,name))
+                chat=update.message.chat_id
+                bot.send_message(chat,notes.read(groupid,name))
         elif(cmd=="list"):
             groupid=str(update.message.chat_id)
             data=notes.listNotes(groupid)
@@ -282,7 +304,8 @@ def noteshandle(bot,update):
         update.message.reply_text(str(e)+" "+str(exc_tb.tb_lineno))
 #END NOTES FRONT END
 
-def quota(bot,update):
+def quota(update: Update, context: CallbackContext):
+    bot = context.bot
     msg=update.message.text.replace("/quota","").strip()
     data=""
     if(msg==""):
@@ -320,7 +343,8 @@ def quota(bot,update):
             data+="Errors where detected while executing!"+"\n"
             data+=stderrData
     update.message.reply_text(data)
-def deleteMsg(bot,update):
+def deleteMsg(update: Update, context: CallbackContext):
+    bot = context.bot
     text=""
     msg=update.message.text
     chat=update.message.chat_id
@@ -334,7 +358,8 @@ def deleteMsg(bot,update):
         text="Unauthorized"
     if("r" in msg):
         bot.send_message(chat,text)
-def kick(bot,update):
+def kick(update: Update, context: CallbackContext):
+    bot = context.bot
     text=""
     chat=update.message.chat_id
     for i in bot.get_chat_administrators(chat):
@@ -345,7 +370,8 @@ def kick(bot,update):
         else:
             text="Unauthorized"
     update.message.reply_text(text)
-def unkick(bot,update):
+def unkick(update: Update, context: CallbackContext):
+    bot = context.bot
     text=""
     chat=update.message.chat_id
     for i in bot.get_chat_administrators(chat):
@@ -356,7 +382,8 @@ def unkick(bot,update):
         else:
             text="Unauthorized"
     update.message.reply_text(text)
-def whoami(bot,update):
+def whoami(update: Update, context: CallbackContext):
+    bot = context.bot
     text="You are "+str(update.message.from_user.full_name)+"\n"
     if(superuser==str(update.message.from_user.id)):
         text+="You are a superuser."+"\n"
@@ -368,7 +395,8 @@ def whoami(bot,update):
     else:
         text+="This is a group with group id "+str(update.message.chat_id)
     update.message.reply_text(text)
-def whoareyou(bot,update):
+def whoareyou(update: Update, context: CallbackContext):
+    bot = context.bot
     text=""
     if(update.message.reply_to_message is not None):
         text="You are "+str(update.message.reply_to_message.from_user.full_name)+"\n"
@@ -384,7 +412,8 @@ def whoareyou(bot,update):
     else:
         text="Did you mean /whoami ? or please tag a message"
     update.message.reply_text(text)
-def id(bot, update):
+def id(update: Update, context: CallbackContext):
+   bot = context.bot
    if(superuser==str(update.message.from_user.id)):
         update.message.reply_text("You are superuser.")
    text="Supergroup id: "+str(update.message.chat_id)
@@ -392,7 +421,8 @@ def id(bot, update):
    update.message.reply_text("User id: "+str(update.message.from_user.id))
    f=open("/tmp/megDUMP","wb")
    pickle.dump(update.message,f)
-def beta(bot, update):
+def beta(update: Update, context: CallbackContext):
+    bot = context.bot
     global betaMode
     if(superuser==str(update.message.from_user.id)):
         if(betaMode==True or os.path.exists(BASEPATH+"beta")):
@@ -407,10 +437,12 @@ def beta(bot, update):
             betaMode=True
     else:
         update.message.reply_text("Sorry, You are Unauthorized to E/D BETA")
-def runs(bot, update):
-   update.message.reply_text("Yup at 100%")
+def runs(update: Update, context: CallbackContext):
+   bot = context.bot
+   update.message.reply_text("Yes bot is running with python "+sys.version.split(" ")[0]+"\nBot Version:"+str(VERSION))
 
-def mult(bot, update):
+def mult(update: Update, context: CallbackContext):
+   bot = context.bot
    print(update.message.from_user.username+":"+update.message.text)
    message=update.message.text
    list=message.strip("/mult").strip().split(",")
@@ -418,10 +450,12 @@ def mult(bot, update):
    for i in list :
         multi*=float(i)
    update.message.reply_text("Answer is :"+str(multi))
-def div(bot, update):
+def div(update: Update, context: CallbackContext):
+   bot = context.bot
    print(update.message.from_user.username+":"+update.message.text)
    update.message.reply_text("Answer is, im not capable yet!")
-def add(bot, update):
+def add(update: Update, context: CallbackContext):
+   bot = context.bot
    print(update.message.from_user.username+":"+update.message.text)
    message=update.message.text
    list=message.strip("/add").strip().split(",")
@@ -429,7 +463,8 @@ def add(bot, update):
    for i in list :
         sum+=float(i)
    update.message.reply_text("Sum is :"+str(sum))
-def about(bot, update):
+def about(update: Update, context: CallbackContext):
+   bot = context.bot 
    data='''             <b>Destroyer Server bot!</b>
                 <i>About/Help DestroyerServer_bot</i>
 -------------------------------------------------------
@@ -454,12 +489,15 @@ Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
 '''
    bot.send_message(chat_id=update.message.chat_id, text=data,parse_mode="HTML")
    print(update.message.from_user.username+":"+update.message.text)
-def start(bot, update):
+def start(update: Update, context: CallbackContext):
+    bot = context.bot
     update.message.reply_text('Use /about to know more')
     print(update.message.from_user.username+":"+update.message.text)
-def hello(bot, update):
+def hello(update: Update, context: CallbackContext):
+    bot = context.bot
     update.message.reply_text('Hello '+update.message.from_user.first_name)
-def sysstat(bot, update):
+def sysstat(update: Update, context: CallbackContext):
+    bot = context.bot
     speedtestp=os.popen("speedtest")
     cpuUse=psutil.cpu_percent(percpu=True,interval=1)
     usedMem=psutil.virtual_memory().used/1024/1024/1024
@@ -492,13 +530,15 @@ def sysstat(bot, update):
     msg+=speedtestDownload+"\n"
     msg+=speedtestUpload+"\n"
     update.message.reply_text(msg)
-def cpustat(bot,update):
+def cpustat(update: Update, context: CallbackContext):
+    bot = context.bot
     cpuUse=psutil.cpu_percent(percpu=True,interval=1)
     msg="-------CPU------\n"
     for i in range(len(cpuUse)):
         msg+="CPU"+str(i)+":"+str(float(cpuUse[i]))+"%\n"
     update.message.reply_text(msg)
-def memstat(bot,update):
+def memstat(update: Update, context: CallbackContext):
+    bot = context.bot
     usedMem=psutil.virtual_memory().used/1024/1024/1024
     freeMem=psutil.virtual_memory().free/1024/1024/1024
     totalMem=psutil.virtual_memory().total/1024/1024/1024
@@ -514,7 +554,9 @@ def memstat(bot,update):
     msg+="free:"+str(swapFree)+"GiB\n"
     msg+="total:"+str(swapTotal)+"GiB\n"
     update.message.reply_text(msg)
-def st(bot,update):
+@run_async
+def st(update: Update, context: CallbackContext):
+    bot = context.bot
     speedtestp=os.popen("speedtest-cli")
     update.message.reply_text("Getting speedtest results")
     speedtest=speedtestp.read()
@@ -528,7 +570,8 @@ def st(bot,update):
     msg+=speedtestDownload+"\n"
     msg+=speedtestUpload+"\n"
     update.message.reply_text(msg)
-def cpuhog(bot,update):
+def cpuhog(update: Update, context: CallbackContext):
+    bot = context.bot
     command='''ps -aeo pcpu,pid,user,args | sort -k1 -r -n | head -1 | awk '''
     command+="'"+'''{ print "CpuUse:"$1; print "PID:"$2; print "User:"$3; print "Command:"$4 }'''
     command+="'"
@@ -536,7 +579,8 @@ def cpuhog(bot,update):
     data=p.read()
     update.message.reply_text(data)
     return data
-def fixPerm(bot,update):
+def fixPerm(update: Update, context: CallbackContext):
+    bot = context.bot
     cwd=os.getcwd()
     os.chdir("/home/temp")
     msg="sudo chmod -R g+rwxs /mnt/build/sharedroms"
@@ -575,7 +619,8 @@ def fixPerm(bot,update):
     update.message.reply_text("Permission changed\nFollowing output obtained\n"+data)
     os.chdir(cwd)
 @run_async
-def shell(bot,update):
+def shell(update: Update, context: CallbackContext):
+    bot = context.bot
     cwd=os.getcwd()
     os.chdir("/home/temp")
     msg=update.message.text
@@ -636,7 +681,8 @@ try:
 except: 
    print("Error occured, try running setup.py")
    exit()
-def allHandle(bot,update):
+def allHandle(update: Update, context: CallbackContext):
+    bot = context.bot
     global speedTestFlag
     global ATT
     global UNAUTH
@@ -699,19 +745,19 @@ Super USER alert (for security sake) by the gatekeeper @abhiramshibu
                     '''
                     update.message.reply_text(text)
                 elif("memory" in msg and ("report" in msg or "status" in msg or "usage" in msg or "free" in msg or "utilization" in msg)):
-                    memstat(bot,update)
+                    memstat(update, context)
                 elif("cpu" in msg and ("report" in msg or "status" in msg or "usage" in msg or "utilization" in msg)):
-                    cpustat(bot,update)
+                    cpustat(update, context)
                 elif(("using" in msg or "hog" in msg or "bottlekneck" in msg) and "cpu" in msg):
-                    data=cpuhog(bot,update)
+                    data=cpuhog(update, context)
                     if("who" in msg):
                         update.message.reply_text(data.split("\n")[2].replace("User:",""))
                     elif("what" in msg):
                         update.message.reply_text(data.split("\n")[3].replace("Command:","")+" "+data.split("\n")[1].replace("PID:",""))
                 elif(("server" in msg or "system" in msg or "report" in msg) and "status" in msg):
                     update.message.reply_text("Getting information")
-                    cpustat(bot,update)
-                    memstat(bot,update)
+                    cpustat(update, context)
+                    memstat(update, context)
                     update.message.reply_text("Do you want speedtest results?")
                     speedTestFlag=True
                 elif("scan" in msg and ("local" in msg or "open" in msg) and "port" in msg):
@@ -886,19 +932,31 @@ Super USER alert (for security sake) by the gatekeeper @abhiramshibu
                             else:
                                 update.message.reply_text("Automated Turing Test(ATT) is already Disabled")
                     else:
-                        update.message.reply_text("Sorry this command is reserved for Abhiram Shibu")
+                        update.message.reply_text("Sorry this command is reserved for Super User")
                         
             elif(msg=="yes" or msg=="yeah" or msg=="yup"):
                 if(speedTestFlag==True):
-                    st(bot,update)
+                    st(update, context)
                     speedTestFlag=False
             elif(msg=="no" or msg=="never" or msg=="nop"):
                 if(speedTestFlag==True):
                     update.message.reply_text("Ok, as you wish.")
                     speedTestFlag=False
+            elif("thank" in msg.lower() or "good" in msg.lower()):
+                try:
+                    if(update.message.reply_to_message.from_user.id==733977759):
+                        update.message.reply_text(randomize(["You are welcome","Glad I can help","☺"]))
+                except:
+                    pass
     except Exception as e:
         update.message.reply_text(str(e))
 bot=telegram.Bot(key)
+groupSend=False
+def enableGroupSend():
+    global groupSend
+    time.sleep(10)
+    bot.send_message(superuser,"Enabled Group Send")
+    groupSend=True
 def apcUPS():
     f=None
     if(os.path.exists(APCLOG)):
@@ -908,9 +966,12 @@ def apcUPS():
         while True:
             line = f.stdout.readline().decode()
             bot.send_message(superuser,line)
-            bot.send_message(MAINGROUP,line)
-p=Process(target=apcUPS)
-p.start()
+            if(groupSend):
+                bot.send_message(MAINGROUP,line)
+apclogd=Thread(target=apcUPS)
+apclogd.start()
+groupSendd=Thread(target=enableGroupSend)
+groupSendd.start()
 updater = Updater(key)
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('id', id))
@@ -941,7 +1002,7 @@ updater.dispatcher.add_handler(CommandHandler('clear', clear))
 updater.dispatcher.add_handler(CommandHandler('setuser', setuser))
 updater.dispatcher.add_handler(CommandHandler('getuser', getuser))
 updater.dispatcher.add_handler(CommandHandler('quota', quota))
-unknown_handler = MessageHandler(Filters.chat, allHandle)
+unknown_handler = MessageHandler(Filters.text, allHandle)
 updater.dispatcher.add_handler(unknown_handler)
 updater.start_polling()
 #updater.idle()
