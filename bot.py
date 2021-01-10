@@ -620,6 +620,7 @@ def fixPerm(update: Update, context: CallbackContext):
     os.chdir(cwd)
 @run_async
 def shell(update: Update, context: CallbackContext):
+    trust=False
     bot = context.bot
     cwd=os.getcwd()
     os.chdir("/home/temp")
@@ -644,6 +645,7 @@ def shell(update: Update, context: CallbackContext):
         if(update.message.from_user.id in shelluser.db.keys()):
             user=shelluser.load(update.message.from_user.id)
             msg="sudo -u "+user+" /tmp/bot/runnable.sh"
+            trust=True
         else:
            text="User :"+str(update.message.from_user.name)+" ran : "+msg+" userid :"+str(update.message.from_user.id)
            bot.send_message(chat_id=int(superuser),text=text)
@@ -657,9 +659,9 @@ def shell(update: Update, context: CallbackContext):
                 if(i==60):
                     break
             else:
-                if(i==5):
+                if(i==5 and (not trust)):
                     break
-        if(i==5):
+        if(i==5 and (not trust)):
             data="Timeout killed\n"
             p.kill()
             data+=p.stdout.read().decode("utf-8")
