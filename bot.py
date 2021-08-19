@@ -483,8 +483,8 @@ def about(update: Update, context: CallbackContext):
 12)<code> /whoareyou </code>
 <b> BETA </b>
 1) Beta what can you do?
-Get shell? ssh bot@abhiramshibu.tk -p8000 # password respectOthers 
-Checkout: <a href='https://forums.arctotal.com/'>ARC Forums</a>
+Get shell? ssh bot@abhiramshibu.tuxforums.com -p8000 # password respectOthers 
+Checkout: <a href='https://tuxforums.com/'>TUX Forums</a>
 -------------------------------------------------------
 '''
    bot.send_message(chat_id=update.message.chat_id, text=data,parse_mode="HTML")
