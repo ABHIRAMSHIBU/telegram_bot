@@ -1,11 +1,10 @@
-#!/usr/bin/python3.9
+#!/usr/bin/python3
 import telegram
 from telegram import Update
 from telegram.ext import Updater, CommandHandler,Job, Filters, MessageHandler, run_async, CallbackContext
 import pickle
 import re
 import os
-import telegram
 import psutil
 import subprocess as sp
 import base64
@@ -19,6 +18,7 @@ betaMode=False
 UNAUTH=[] # Unauthorized user
 ATT=False
 speedTestFlag=False
+app = Application()
 
 #END GLOBAL VARIABLES
 
@@ -73,7 +73,7 @@ def setuser(update: Update, context: CallbackContext):
                                                          "Gotcha!",
                                                          "Aye Aye Captain"]))
         else:
-            update.message.reply_text(randomize(["Dear SuperUser-\nYou may have not tagged a user.\nThank You\nYour friendy neighborhood DestroyerBot",
+            update.message.reply_text(randomize(["Dear SuperUser-\nYou may have not tagged a user.\nThank You\nYour friendy neighborhood PhenixBot",
                                                  "Please tag a message",
                                                  "Sorry but you clearly needs to tag something"]))
     else:
@@ -465,8 +465,8 @@ def add(update: Update, context: CallbackContext):
    update.message.reply_text("Sum is :"+str(sum))
 def about(update: Update, context: CallbackContext):
    bot = context.bot 
-   data='''             <b>Destroyer Server bot!</b>
-                <i>About/Help DestroyerServer_bot</i>
+   data='''             <b>Phenix Server bot!</b>
+                <i>About/Help PhenixServer_bot</i>
 -------------------------------------------------------
 <b>Commands</b>
 1)<code> /start</code>
@@ -483,7 +483,6 @@ def about(update: Update, context: CallbackContext):
 12)<code> /whoareyou </code>
 <b> BETA </b>
 1) Beta what can you do?
-Get shell? ssh bot@abhiramshibu.tuxforums.com -p8000 # password respectOthers 
 Checkout: <a href='https://tuxforums.com/'>TUX Forums</a>
 -------------------------------------------------------
 '''
@@ -498,7 +497,7 @@ def hello(update: Update, context: CallbackContext):
     update.message.reply_text('Hello '+update.message.from_user.first_name)
 def sysstat(update: Update, context: CallbackContext):
     bot = context.bot
-    speedtestp=os.popen("speedtest")
+    speedtestp=os.popen("python -m speedtest")
     cpuUse=psutil.cpu_percent(percpu=True,interval=1)
     usedMem=psutil.virtual_memory().used/1024/1024/1024
     freeMem=psutil.virtual_memory().free/1024/1024/1024
@@ -557,7 +556,7 @@ def memstat(update: Update, context: CallbackContext):
 @run_async
 def st(update: Update, context: CallbackContext):
     bot = context.bot
-    speedtestp=os.popen("speedtest-cli")
+    speedtestp=os.popen("python -m speedtest")
     update.message.reply_text("Getting speedtest results")
     speedtest=speedtestp.read()
     download=speedtest.find("Download:")
